@@ -83,7 +83,7 @@ def render_pdf_sidebar() -> None:
         "letter-spacing:1px;margin-bottom:8px;'>📄 PDF / Image Extractor</div>",
         unsafe_allow_html=True,
     )
-    pdf_file = st.sidebar.file_uploader(
+    pdf_file = st.file_uploader(
         "Upload PDF or image",
         type=["pdf", "png", "jpg", "jpeg", "tiff", "bmp"],
         key="pdf_uploader",
