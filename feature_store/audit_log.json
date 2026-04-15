@@ -21080,5 +21080,56 @@
     "filename": "trellis_docket_Sample_Pdf.pdf",
     "sheet": "Page 1",
     "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071"
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-15T11:47:14.587698",
+    "filename": "trellis_docket_Sample_Pdf.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-15T11:48:22.294165",
+    "filename": "trellis_docket_Sample_Pdf.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-15T12:02:07.097808",
+    "filename": "trellis_docket_Sample_Pdf.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071"
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-15T12:02:44.926070",
+    "filename": "trellis_docket_Sample_Pdf.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-15T12:03:31.072564",
+    "filename": "trellis_docket_Sample_Pdf.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
   }
 ]

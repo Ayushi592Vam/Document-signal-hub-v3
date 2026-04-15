@@ -34,20 +34,29 @@ import textwrap
 # AZURE OPENAI CLIENT
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _get_secrets() -> dict:
+    """Read secrets from Streamlit Cloud or fallback to os.environ."""
+    try:
+        import streamlit as st
+        return st.secrets
+    except Exception:
+        return os.environ
+
 def _get_openai_client():
     try:
         from openai import AzureOpenAI
+        s = _get_secrets()
         return AzureOpenAI(
-            azure_endpoint=os.environ.get("OPENAI_DEPLOYMENT_ENDPOINT", ""),
-            api_key=os.environ.get("OPENAI_API_KEY", ""),
-            api_version=os.environ.get("OPENAI_API_VERSION", "2024-12-01-preview"),
+            azure_endpoint=s.get("OPENAI_DEPLOYMENT_ENDPOINT", ""),
+            api_key=s.get("OPENAI_API_KEY", ""),
+            api_version=s.get("OPENAI_API_VERSION", "2024-12-01-preview"),
         )
     except Exception:
         return None
 
-
 def _deployment() -> str:
-    return os.environ.get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+    return _get_secrets().get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+   
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -589,4 +598,7 @@ def run_pdf_intelligence(parsed: dict, sheet_cache: dict | None = None) -> dict:
         "page_count":     page_count,
         "doc_type":       doc_type,
         "azure_di_index": azure_di_index,
+
     }
+
+    
