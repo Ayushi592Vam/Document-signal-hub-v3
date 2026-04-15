@@ -1594,7 +1594,7 @@ def _render_ai_assessment_tab(intelligence: dict) -> None:
     judge   = intelligence.get("analysis", {}).get("judge", {})
     signals = intelligence.get("analysis", {}).get("signals", [])
 
-    st.markdown(_section_header("AI Assessment"), unsafe_allow_html=True)
+    st.markdown(_section_header("AI Verdict"), unsafe_allow_html=True)
 
     cards = [
         ("🧠", "Classification Rationale",  judge.get("classification_reasoning", ""),
