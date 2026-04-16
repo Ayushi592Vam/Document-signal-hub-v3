@@ -11,6 +11,7 @@ is visible before the user drills into individual claim details.
 import datetime
 import re
 
+
 import streamlit as st
 
 from modules.audit import _append_audit
@@ -578,13 +579,15 @@ def _render_totals_section(totals_data: dict) -> None:
     for idx, (k, v) in enumerate(agg.items()):
         with t_cols[idx % len(t_cols)]:
             st.markdown(
-                f"<div style='background:var(--s0);border:1px solid var(--b0);"
-                f"border-top:2px solid var(--green);border-radius:8px;"
-                f"padding:10px 14px;margin-bottom:8px;'>"
-                f"<div style='font-size:var(--sz-xs);color:var(--t2);"
-                f"text-transform:uppercase;font-family:var(--mono);letter-spacing:0.8px;'>{k}</div>"
-                f"<div style='font-size:var(--sz-body);font-weight:700;color:var(--green);"
-                f"font-family:var(--mono);margin-top:2px;'>{v:,.2f}</div></div>",
+                f"<div style='background:#f8f9fc;border:1px solid #d0d6e8;"
+                f"border-top:3px solid #0a9e6a;border-radius:8px;"
+                f"padding:12px 16px;margin-bottom:8px;"
+                f"box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                f"<div style='font-size:10px;font-weight:800;color:#4a5578;"
+                f"text-transform:uppercase;font-family:monospace;"
+                f"letter-spacing:1.2px;margin-bottom:6px;'>{k}</div>"
+                f"<div style='font-size:16px;font-weight:700;color:#0a9e6a;"
+                f"font-family:monospace;'>{v:,.2f}</div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -652,29 +655,60 @@ def render_claim_panel(
         # Build metadata rows HTML
         _meta_html = ""
         if _meta_rows:
-            _meta_items = "".join(
-                f"<div style='display:flex;gap:6px;align-items:baseline;min-width:160px;'>"
-                f"<span style='font-size:9px;color:var(--t3);font-family:var(--mono);"
-                f"text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;'>{k}:</span>"
-                f"<span style='font-size:var(--sz-xs);color:var(--t1);font-family:var(--font);'>{v}</span>"
-                f"</div>"
+            _pills = "".join(
+                f"<span style='display:inline-flex;align-items:baseline;gap:5px;"
+                f"background:#ffffff;border:1px solid #d0d6e8;"
+                f"border-radius:5px;padding:4px 10px;margin:3px 4px 3px 0;'>"
+                f"<span style='font-size:9px;color:#4a5578;font-family:monospace;"
+                f"text-transform:uppercase;letter-spacing:.8px;font-weight:700;"
+                f"white-space:nowrap;'>{k}:</span>"
+                f"<span style='font-size:12px;color:#0f1117;font-family:monospace;"
+                f"font-weight:500;'>{v}</span></span>"
                 for k, v in _meta_rows
             )
             _meta_html = (
-                f"<div style='display:flex;flex-wrap:wrap;gap:10px 24px;"
-                f"margin-top:8px;padding-top:8px;"
-                f"border-top:1px solid var(--b0);'>"
-                + _meta_items +
-                f"</div>"
+                f"<div style='display:flex;flex-wrap:wrap;gap:0;margin-top:8px;"
+                f"padding-top:8px;border-top:1px solid #e8ecf4;'>{_pills}</div>"
             )
 
+        _title_inner = ""
+        if _banner_main:
+            _title_inner += (
+                f"<div style='font-size:15px;font-weight:700;color:#0f1117;"
+                f"font-family:var(--font-head);margin-bottom:4px;line-height:1.3;'>"
+                f"{_banner_main}</div>"
+            )
+        if _banner_sub:
+            _title_inner += (
+                f"<div style='font-size:12px;color:#1a6fd8;font-family:monospace;"
+                f"font-weight:500;margin-bottom:6px;'>{_banner_sub}</div>"
+            )
+        if _meta_rows:
+            _pills = "".join(
+                f"<span style='display:inline-flex;align-items:baseline;gap:5px;"
+                f"background:#ffffff;border:1px solid #d0d6e8;"
+                f"border-radius:5px;padding:4px 10px;margin:3px 4px 3px 0;'>"
+                f"<span style='font-size:9px;color:#4a5578;font-family:monospace;"
+                f"text-transform:uppercase;letter-spacing:.8px;font-weight:700;"
+                f"white-space:nowrap;'>{k}:</span>"
+                f"<span style='font-size:12px;color:#0f1117;font-family:monospace;"
+                f"font-weight:500;'>{v}</span></span>"
+                for k, v in _meta_rows
+            )
+            _title_inner += (
+                f"<div style='display:flex;flex-wrap:wrap;gap:0;margin-top:8px;"
+                f"padding-top:8px;border-top:1px solid #e8ecf4;'>{_pills}</div>"
+            )
         st.markdown(
-            f"<div class='sheet-title-banner'>"
-            f"<div class='sheet-title-label'>Sheet Title</div>"
-            + (f"<div class='sheet-title-value'>{_banner_main}</div>" if _banner_main else "")
-            + (f"<div class='sheet-subtitle-val'>{_banner_sub}</div>" if _banner_sub else "")
-            + _meta_html
-            + "</div>",
+            f"<div style='background:#f8f9fc;border:1px solid #d0d6e8;"
+            f"border-left:4px solid #1a6fd8;border-radius:10px;"
+            f"padding:14px 18px;margin-bottom:12px;"
+            f"box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+            f"<div style='font-size:9px;font-weight:800;color:#4a5578;"
+            f"font-family:monospace;text-transform:uppercase;"
+            f"letter-spacing:1.5px;margin-bottom:8px;'>📋 Sheet Title</div>"
+            f"{_title_inner}"
+            f"</div>",
             unsafe_allow_html=True,
         )
 
@@ -687,17 +721,51 @@ def render_claim_panel(
     # ── Claim header ──────────────────────────────────────────────────────────
     head_left, head_right = st.columns([3, 1])
     with head_left:
-        st.markdown("<p class='section-lbl'>Review Details</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<p class='section-lbl' style='font-weight:800;color:#0f1117;"
+            "margin-bottom:6px;'>Review Details</p>",
+            unsafe_allow_html=True,
+        )
         h_name   = get_val(curr_claim, ["Insured Name", "Name", "Claimant", "TPA_NAME"], "Unknown Entity")
         h_date   = get_val(curr_claim, ["Loss Date", "Date", "LOSS_DATE"], "N/A")
         h_status = get_val(curr_claim, ["Status", "CLAIM_STATUS"], "Submitted")
         h_total  = get_val(curr_claim, ["Total Incurred", "Incurred", "Total", "Amount", "TOTAL_INCURRED"], "$0")
+        _s_up = str(h_status).upper()
+        _sc   = "#0a9e6a" if "CLOS" in _s_up else "#c99a00" if "OPEN" in _s_up else "#1a6fd8"
+        _sb   = "#e6f9f2" if "CLOS" in _s_up else "#fffbeb" if "OPEN" in _s_up else "#e8f0fe"
         st.markdown(
-            f"<div class='mid-header-title'>{curr_claim_id}</div>"
-            f"<div class='mid-header-sub'>{h_name} — {h_date}</div>"
-            f"<div class='mid-header-status'>{h_status}</div>"
-            f"<div class='incurred-label'>Total Incurred</div>"
-            f"<div class='incurred-amount'>{h_total}</div>",
+            f"<div style='background:#f8f9fc;border:1px solid #d0d6e8;"
+            f"border-left:4px solid #1a6fd8;border-radius:10px;"
+            f"padding:14px 18px;margin-bottom:8px;"
+            f"box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+            f"<div style='display:flex;justify-content:space-between;"
+            f"align-items:flex-start;flex-wrap:wrap;gap:12px;'>"
+            f"<div>"
+            f"<div style='font-size:9px;font-weight:800;color:#4a5578;"
+            f"font-family:monospace;text-transform:uppercase;"
+            f"letter-spacing:1.2px;margin-bottom:4px;'>Claim ID</div>"
+            f"<div style='font-size:20px;font-weight:700;color:#0f1117;"
+            f"font-family:var(--font-head);letter-spacing:-0.3px;'>{curr_claim_id}</div>"
+            f"<div style='font-size:12px;color:#4a5578;margin-top:3px;'>"
+            f"{h_name} — {h_date}</div>"
+            f"</div>"
+            f"<div style='display:flex;gap:20px;align-items:flex-start;'>"
+            f"<div>"
+            f"<div style='font-size:9px;font-weight:800;color:#4a5578;"
+            f"font-family:monospace;text-transform:uppercase;"
+            f"letter-spacing:1.2px;margin-bottom:4px;'>Status</div>"
+            f"<span style='display:inline-block;background:{_sb};"
+            f"border:1px solid {_sc}60;border-radius:6px;padding:4px 14px;"
+            f"font-size:12px;font-weight:700;color:{_sc};"
+            f"font-family:monospace;'>{h_status}</span>"
+            f"</div>"
+            f"<div>"
+            f"<div style='font-size:9px;font-weight:800;color:#4a5578;"
+            f"font-family:monospace;text-transform:uppercase;"
+            f"letter-spacing:1.2px;margin-bottom:4px;'>Total Incurred</div>"
+            f"<div style='font-size:20px;font-weight:700;color:#0a9e6a;"
+            f"font-family:monospace;'>{h_total}</div>"
+            f"</div></div></div></div>",
             unsafe_allow_html=True,
         )
     with head_right:

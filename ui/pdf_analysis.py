@@ -1,5 +1,5 @@
 """
-ui/pdf_analysis.py  — v6
+ui/pdf_analysis.py  — v7
 
 Architecture:
   • LLM (pdf_intelligence) extracts ONLY relevant fields per doc type
@@ -14,7 +14,10 @@ Tabs (6):
   3. ⚡ Signals (N)           — Grouped by taxonomy: Highly Severe / High / Moderate / Low
   4. 📄 Raw JSON              — All pages KV JSON (reflects edits), download
   5. 🔄 Transformation Journey — Step-by-step pipeline trace + audit log
-  6. 🧑‍⚖️ AI Assessment        — 4 judge cards only
+  6. ✅ Validation             — Deep AI validation with per-dimension scores
+
+Theme: Light (white background, dark text throughout)
+Model names are never surfaced in the UI.
 """
 
 from __future__ import annotations
@@ -32,29 +35,37 @@ import streamlit as st
 # ─────────────────────────────────────────────────────────────────────────────
 
 _DOC_TYPE_META = {
-    "FNOL":     {"icon": "🚨", "color": "#f87171", "bg": "rgba(248,113,113,0.08)"},
-    "Legal":    {"icon": "⚖️",  "color": "#a78bfa", "bg": "rgba(167,139,250,0.08)"},
-    "Loss Run": {"icon": "📊", "color": "#34d399", "bg": "rgba(52,211,153,0.08)"},
-    "Medical":  {"icon": "🏥", "color": "#60a5fa", "bg": "rgba(96,165,250,0.08)"},
+    "FNOL":     {"icon": "🚨", "color": "#dc2626", "bg": "rgba(220,38,38,0.06)"},
+    "Legal":    {"icon": "⚖️",  "color": "#7c3aed", "bg": "rgba(124,58,237,0.06)"},
+    "Loss Run": {"icon": "📊", "color": "#059669", "bg": "rgba(5,150,105,0.06)"},
+    "Medical":  {"icon": "🏥", "color": "#2563eb", "bg": "rgba(37,99,235,0.06)"},
 }
 
 _SIGNAL_META = {
-    "severity":           {"icon": "🔴", "label": "Severity",           "color": "#f87171"},
-    "legal_escalation":   {"icon": "⚖️",  "label": "Legal Escalation",   "color": "#a78bfa"},
-    "fraud_indicator":    {"icon": "🚩", "label": "Fraud Indicator",    "color": "#fbbf24"},
-    "medical_complexity": {"icon": "🏥", "label": "Medical Complexity", "color": "#60a5fa"},
-    "coverage_issue":     {"icon": "📋", "label": "Coverage Issue",     "color": "#f59e0b"},
+    "severity":           {"icon": "🔴", "label": "Severity",           "color": "#dc2626"},
+    "legal_escalation":   {"icon": "⚖️",  "label": "Legal Escalation",   "color": "#7c3aed"},
+    "fraud_indicator":    {"icon": "🚩", "label": "Fraud Indicator",    "color": "#d97706"},
+    "medical_complexity": {"icon": "🏥", "label": "Medical Complexity", "color": "#2563eb"},
+    "coverage_issue":     {"icon": "📋", "label": "Coverage Issue",     "color": "#b45309"},
 }
 
 _TAXONOMY = {
-    "Highly Severe": {"color": "#ff4444", "bg": "rgba(255,68,68,0.10)",   "icon": "🔥"},
-    "High":          {"color": "#f87171", "bg": "rgba(248,113,113,0.08)", "icon": "🔴"},
-    "Moderate":      {"color": "#f5c842", "bg": "rgba(245,200,66,0.08)",  "icon": "🟡"},
-    "Low":           {"color": "#34d399", "bg": "rgba(52,211,153,0.08)",  "icon": "🟢"},
+    "Highly Severe": {"color": "#dc2626", "bg": "rgba(220,38,38,0.06)",   "icon": "🔥"},
+    "High":          {"color": "#ea580c", "bg": "rgba(234,88,12,0.06)",   "icon": "🔴"},
+    "Moderate":      {"color": "#ca8a04", "bg": "rgba(202,138,4,0.06)",   "icon": "🟡"},
+    "Low":           {"color": "#16a34a", "bg": "rgba(22,163,74,0.06)",   "icon": "🟢"},
 }
 
-_TXT = "#f0efff"
-_LBL = "#8888bb"
+# ── Light-theme colour tokens ─────────────────────────────────────────────────
+_BG        = "#ffffff"          # page / card background
+_BG2       = "#f8f9fa"          # slightly-off-white for inset areas
+_BG3       = "#f1f3f5"          # subtle backgrounds
+_BORDER    = "#e2e8f0"          # standard border
+_BORDER2   = "#cbd5e1"          # slightly stronger border
+_TXT       = "#0f172a"          # primary text — near-black
+_TXT2      = "#1e293b"          # secondary text
+_LBL       = "#64748b"          # label / muted text
+_LBL2      = "#94a3b8"          # very muted
 
 _UPLOADER_PLUS_CSS = """
 <style>
@@ -72,11 +83,45 @@ _UPLOADER_PLUS_CSS = """
 
 def _conf_badge(conf: float) -> str:
     pct = int(conf * 100)
-    c   = "#34d399" if pct >= 80 else "#f5c842" if pct >= 60 else "#f87171"
+    c   = "#16a34a" if pct >= 80 else "#ca8a04" if pct >= 60 else "#dc2626"
+    bg  = "#f0fdf4" if pct >= 80 else "#fefce8" if pct >= 60 else "#fef2f2"
     return (
-        f"<span style='background:{c}20;border:1px solid {c};border-radius:20px;"
+        f"<span style='background:{bg};border:1px solid {c}40;border-radius:20px;"
         f"padding:1px 8px;font-size:10px;color:{c};font-weight:700;"
         f"font-family:monospace;'>{pct}%</span>"
+    )
+
+
+def _score_badge(score: int) -> str:
+    c  = "#16a34a" if score >= 80 else "#ca8a04" if score >= 60 else "#dc2626"
+    bg = "#f0fdf4" if score >= 80 else "#fefce8" if score >= 60 else "#fef2f2"
+    return (
+        f"<span style='background:{bg};border:1px solid {c}40;border-radius:20px;"
+        f"padding:2px 10px;font-size:11px;color:{c};font-weight:700;"
+        f"font-family:monospace;'>{score}/100</span>"
+    )
+
+
+def _verdict_badge(verdict: str) -> str:
+    vmap = {
+        "Pass": ("#16a34a", "#f0fdf4"),
+        "Validated": ("#16a34a", "#f0fdf4"),
+        "Credible": ("#16a34a", "#f0fdf4"),
+        "Adequate": ("#16a34a", "#f0fdf4"),
+        "Fail": ("#dc2626", "#fef2f2"),
+        "Failed": ("#dc2626", "#fef2f2"),
+        "Unsupported": ("#dc2626", "#fef2f2"),
+        "Critical Gaps": ("#dc2626", "#fef2f2"),
+        "Review": ("#ca8a04", "#fefce8"),
+        "Needs Review": ("#ca8a04", "#fefce8"),
+        "Questionable": ("#ca8a04", "#fefce8"),
+        "Gaps Identified": ("#ca8a04", "#fefce8"),
+    }
+    c, bg = vmap.get(verdict, ("#64748b", "#f8fafc"))
+    return (
+        f"<span style='background:{bg};border:1px solid {c}40;border-radius:6px;"
+        f"padding:3px 12px;font-size:11px;color:{c};font-weight:700;"
+        f"font-family:monospace;'>{verdict}</span>"
     )
 
 
@@ -87,15 +132,15 @@ def _section_header(title: str, subtitle: str = "") -> str:
     )
     return (
         f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;'>"
-        f"<div style='font-size:11px;font-weight:700;color:#c4c4e8;font-family:monospace;"
+        f"<div style='font-size:11px;font-weight:700;color:{_TXT2};font-family:monospace;"
         f"text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;'>{title}</div>"
         f"{sub}"
-        f"<div style='flex:1;height:1px;background:linear-gradient(90deg,#2a2a45,transparent);'>"
+        f"<div style='flex:1;height:1px;background:linear-gradient(90deg,{_BORDER},{_BG});'>"
         f"</div></div>"
     )
 
 
-def _card(content: str, border_color: str = "#2a2a45", bg: str = "#12121c") -> str:
+def _card(content: str, border_color: str = _BORDER, bg: str = _BG) -> str:
     return (
         f"<div style='background:{bg};border:1px solid {border_color};"
         f"border-radius:8px;padding:14px 16px;margin-bottom:10px;'>{content}</div>"
@@ -107,7 +152,7 @@ def _source_snippet(source_text: str) -> str:
         return ""
     return (
         f"<div style='font-size:10px;color:{_LBL};font-family:monospace;"
-        f"background:#0d0d1a;border-left:2px solid #2a2a45;padding:4px 8px;"
+        f"background:{_BG2};border-left:2px solid {_BORDER2};padding:4px 8px;"
         f"margin-top:5px;border-radius:0 4px 4px 0;font-style:italic;'>"
         f"📄 {source_text}</div>"
     )
@@ -119,57 +164,63 @@ def _source_snippet(source_text: str) -> str:
 
 def _nk(s: str) -> str:
     """Normalise a field name for fuzzy matching."""
+    if not s: return ""
+    s = str(s).strip()
+    s = re.sub(r'\([^)]*\)', '', s)
+    s = s.rstrip(':').strip()
     return re.sub(r"[\s\-_:./]+", "_", s.lower()).strip("_")
 
 
 def _match_score(a: str, b: str) -> float:
-    """
-    Return a match score 0‒1 between two normalised field-name strings.
-    1.0 = exact, >0 = partial overlap, 0 = no match.
-    """
+    """Return match score 0-1 between two normalised field-name strings."""
     if a == b:
         return 1.0
-    # One fully contains the other AND the shorter is ≥ 60% of longer
     shorter = min(len(a), len(b))
     longer  = max(len(a), len(b))
     if longer == 0:
         return 0.0
     if (a in b or b in a) and shorter / longer >= 0.60:
         return shorter / longer
-    # Word-level intersection
     a_words = set(a.split("_"))
     b_words = set(b.split("_"))
-    # Ignore single-char tokens and very generic words
-    _STOP = {"a", "of", "to", "in", "on", "by", "at", "id", "no", "date",
-              "name", "type", "code", "the", "and", "or"}
+    _STOP = {"a", "of", "to", "in", "on", "by", "at", "id", "no",
+             "the", "and", "or"}
     a_sig = a_words - _STOP - {w for w in a_words if len(w) <= 1}
     b_sig = b_words - _STOP - {w for w in b_words if len(w) <= 1}
     if not a_sig or not b_sig:
         return 0.0
-    inter = len(a_sig & b_sig)
-    union = len(a_sig | b_sig)
+    inter   = len(a_sig & b_sig)
+    union   = len(a_sig | b_sig)
     jaccard = inter / union if union else 0.0
-    # Only count word-level matches if at least 1 significant word matches
-    # and jaccard is meaningful
+    shorter_sig = a_sig if len(a_sig) <= len(b_sig) else b_sig
+    if shorter_sig and shorter_sig <= (a_sig & b_sig):
+        return 0.60
     return jaccard if inter >= 1 and jaccard >= 0.40 else 0.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AZURE DI LOOKUP TABLE  (built once per render, cached in session)
+# AZURE DI LOOKUP TABLE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_azure_lookup() -> dict[str, dict]:
+def _build_azure_lookup() -> dict[str, list[dict]]:
     """
-    Build a normalised-name → field_info lookup from ALL Azure DI fields
-    currently in sheet_cache. Cached in session state under '_adi_lookup'.
+    Build normalised-name → list[field_info] lookup from ALL Azure DI fields.
+    Cached in session state under '_adi_lookup'.
     """
     cache_key = "_adi_lookup"
     if cache_key in st.session_state:
         return st.session_state[cache_key]
 
-    lookup: dict[str, dict] = {}
-    sheet_cache = st.session_state.get("sheet_cache", {})
-    for _, sheet_data in sheet_cache.items():
+    lookup: dict[str, list[dict]] = {}
+
+    intel = st.session_state.get("_pdf_intelligence", {})
+    for az_name, az_info in intel.get("azure_di_index", {}).items():
+        if not isinstance(az_info, dict):
+            continue
+        norm = _nk(az_name)
+        lookup.setdefault(norm, []).append(az_info)
+
+    for _, sheet_data in st.session_state.get("sheet_cache", {}).items():
         for page_dict in sheet_data.get("data", []):
             if not isinstance(page_dict, dict):
                 continue
@@ -177,36 +228,98 @@ def _build_azure_lookup() -> dict[str, dict]:
                 if not isinstance(az_info, dict):
                     continue
                 norm = _nk(az_name)
-                # Keep the entry with highest confidence when names collide
-                existing = lookup.get(norm)
-                new_conf = float(az_info.get("confidence", 0.0))
-                if existing is None or new_conf > float(existing.get("confidence", 0.0)):
-                    lookup[norm] = az_info
+                existing_pages = {e.get("source_page") for e in lookup.get(norm, [])}
+                new_page = az_info.get("source_page", 1)
+                if new_page not in existing_pages:
+                    lookup.setdefault(norm, []).append(az_info)
 
-    # Only cache if we found something — avoids caching an empty dict
-    # when sheet_cache hasn't been populated yet
     if lookup:
         st.session_state[cache_key] = lookup
     return lookup
 
 
-def _find_azure_match(entity_name: str, lookup: dict[str, dict]) -> dict | None:
-    """
-    Find the best-matching Azure DI field for an LLM entity name.
-    Returns the az_info dict or None.
-    """
+def _find_azure_match(
+    entity_name: str,
+    lookup: dict[str, list[dict]],
+    hint_page: int | None = None,
+) -> dict | None:
+    """Find the best-matching Azure DI field for an LLM entity name."""
     en = _nk(entity_name)
-    best_info:  dict | None = None
-    best_score: float       = 0.0
+    best_entries: list[dict] = []
+    best_score: float = 0.0
 
-    for az_norm, az_info in lookup.items():
+    for az_norm, entries in lookup.items():
         score = _match_score(en, az_norm)
         if score > best_score:
-            best_score = score
-            best_info  = az_info
+            best_score   = score
+            best_entries = entries
+        elif score == best_score and score > 0:
+            best_entries = best_entries + entries
 
-    # Require at least a 0.60 score to count as a real match
-    return best_info if best_score >= 0.60 else None
+    en_word_count = len([w for w in en.split("_") if w])
+    threshold = 0.50 if en_word_count <= 2 else 0.60
+    if best_score < threshold or not best_entries:
+        return None
+
+    if len(best_entries) == 1:
+        return best_entries[0]
+
+    if hint_page is not None:
+        for entry in best_entries:
+            if entry.get("source_page") == hint_page:
+                return entry
+
+    return max(best_entries, key=lambda e: float(e.get("confidence", 0.0)))
+
+
+def _try_pymupdf_bbox_for_entity(field_info: dict, page_num: int) -> None:
+    """Last-resort bbox search via PyMuPDF. Mutates field_info in-place."""
+    try:
+        import fitz, os
+        pdf_path = None
+        tmpdir = st.session_state.get("tmpdir", "")
+        if tmpdir:
+            for ext in (".pdf", ".PDF"):
+                c = os.path.join(tmpdir, f"input{ext}")
+                if os.path.exists(c):
+                    pdf_path = c
+                    break
+        if not pdf_path:
+            return
+
+        val_text = (field_info.get("value") or "").strip()
+        if not val_text:
+            return
+        search_text = " ".join(val_text.split()[:4]) if len(val_text) > 60 else val_text
+        doc  = fitz.open(pdf_path)
+        if page_num < 1 or page_num > len(doc):
+            doc.close()
+            return
+        page      = doc[page_num - 1]
+        pw        = page.rect.width
+        ph        = page.rect.height
+        page_w_in = field_info.get("page_width",  8.5)
+        page_h_in = field_info.get("page_height", 11.0)
+
+        rects = (
+            page.search_for(search_text)
+            or page.search_for(search_text.upper())
+            or page.search_for(" ".join(val_text.split()[:4])))
+        if rects:
+            r      = rects[0]
+            inv_sx = page_w_in / pw if pw else 1.0
+            inv_sy = page_h_in / ph if ph else 1.0
+            field_info["bounding_polygon"] = [
+                (r.x0 * inv_sx, r.y0 * inv_sy),
+                (r.x1 * inv_sx, r.y0 * inv_sy),
+                (r.x1 * inv_sx, r.y1 * inv_sy),
+                (r.x0 * inv_sx, r.y1 * inv_sy),
+            ]
+            field_info["page_width"]  = page_w_in
+            field_info["page_height"] = page_h_in
+        doc.close()
+    except Exception:
+        pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -214,13 +327,6 @@ def _find_azure_match(entity_name: str, lookup: dict[str, dict]) -> dict | None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _lookup_confidence(field_name: str, field_info: dict) -> float:
-    """
-    Best confidence available:
-      1. field_info["confidence"] (set when building intel fields)
-      2. Azure DI match confidence
-      3. 0.85 if bounding polygon exists (Azure KV confirmed)
-      4. 0.0 (shown as N/A)
-    """
     direct = field_info.get("confidence")
     if direct is not None and float(direct) > 0:
         return float(direct)
@@ -230,24 +336,15 @@ def _lookup_confidence(field_name: str, field_info: dict) -> float:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM ENTITIES ENRICHED WITH AZURE DI  (core function)
+# LLM ENTITIES ENRICHED WITH AZURE DI
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _get_intelligence_entities(selected_sheet: str) -> list[tuple[str, dict]]:
-    """
-    Build the authoritative entity list for the Entities tab.
-
-    Priority order for source of field names:
-      1. intelligence["analysis"]["entities"]   — LLM-extracted, type-specific
-      2. intelligence["analysis"]["type_specific"] — LLM assessment fields (fallback)
-    For each entity, Azure DI bounding polygon + confidence is looked up by name.
-    Returns [] only if neither LLM source has data.
-    """
+    """Build the authoritative entity list for the Entities tab."""
     intel    = st.session_state.get("_pdf_intelligence", {})
     analysis = intel.get("analysis", {})
     entities = analysis.get("entities", {})
 
-    # Fallback: use type_specific if entities is empty
     if not entities:
         ts = analysis.get("type_specific", {})
         if ts:
@@ -266,7 +363,6 @@ def _get_intelligence_entities(selected_sheet: str) -> list[tuple[str, dict]]:
         llm_value = entity_data.get("value", "")
         llm_conf  = float(entity_data.get("confidence", 0.0))
 
-        # Start with LLM data
         field_info: dict = {
             "value":              llm_value,
             "modified":           eds.get(entity_name, llm_value),
@@ -276,32 +372,64 @@ def _get_intelligence_entities(selected_sheet: str) -> list[tuple[str, dict]]:
             "page_width":         8.5,
             "page_height":        11.0,
             "bounding_polygon":   None,
-            "_adi_confidence":    0.0,   # Azure DI engine confidence
+            "_adi_confidence":    0.0,
             "_from_intelligence": True,
         }
 
-        # Look up matching Azure DI field
-        az_match = _find_azure_match(entity_name, az_lookup)
+        adi_key_hint = entity_data.get("azure_di_key")
+        hint_page    = None
+
+        az_match = _find_azure_match(entity_name, az_lookup, hint_page=hint_page)
+
         if az_match:
             adi_conf = float(az_match.get("confidence", 0.0))
+            field_info["bounding_polygon"] = az_match.get("bounding_polygon")
+            field_info["source_page"]  = az_match.get("source_page", 1)
+            field_info["page_width"]   = az_match.get("page_width",  8.5)
+            field_info["page_height"]  = az_match.get("page_height", 11.0)
 
-            # Bounding box from Azure DI
-            if az_match.get("bounding_polygon"):
-                field_info["bounding_polygon"] = az_match["bounding_polygon"]
-                field_info["source_page"]      = az_match.get("source_page", 1)
-                field_info["page_width"]        = az_match.get("page_width",  8.5)
-                field_info["page_height"]       = az_match.get("page_height", 11.0)
-
-            # Azure DI confidence overrides LLM confidence when available
             if adi_conf > 0:
-                field_info["confidence"]     = adi_conf
+                field_info["confidence"]      = adi_conf
                 field_info["_adi_confidence"] = adi_conf
 
-            # Use Azure DI value only if LLM returned empty
             if not llm_value and az_match.get("value"):
                 az_val = az_match["value"]
                 field_info["value"]    = az_val
                 field_info["modified"] = eds.get(entity_name, az_val)
+
+        if adi_key_hint and field_info["bounding_polygon"] is None:
+            adi_norm = _nk(adi_key_hint)
+            entries  = az_lookup.get(adi_norm, [])
+            if entries:
+                best = max(entries, key=lambda e: float(e.get("confidence", 0.0)))
+                if best.get("bounding_polygon"):
+                    field_info["bounding_polygon"] = best["bounding_polygon"]
+                    field_info["source_page"]  = best.get("source_page", field_info["source_page"])
+                    field_info["page_width"]   = best.get("page_width",  field_info["page_width"])
+                    field_info["page_height"]  = best.get("page_height", field_info["page_height"])
+                    if float(best.get("confidence", 0.0)) > 0:
+                        field_info["confidence"]      = float(best["confidence"])
+                        field_info["_adi_confidence"] = float(best["confidence"])
+
+        if field_info["bounding_polygon"] is None and llm_value and len(llm_value) > 6:
+            snippet = " ".join(llm_value.split()[:6]).lower()
+            for entries in az_lookup.values():
+                for entry in entries:
+                    az_val = str(entry.get("value", "")).lower()
+                    if snippet in az_val and entry.get("bounding_polygon"):
+                        field_info["bounding_polygon"] = entry["bounding_polygon"]
+                        field_info["source_page"]  = entry.get("source_page", field_info["source_page"])
+                        field_info["page_width"]   = entry.get("page_width",  field_info["page_width"])
+                        field_info["page_height"]  = entry.get("page_height", field_info["page_height"])
+                        if float(entry.get("confidence", 0.0)) > 0:
+                            field_info["confidence"]      = float(entry["confidence"])
+                            field_info["_adi_confidence"] = float(entry["confidence"])
+                        break
+                if field_info["bounding_polygon"]:
+                    break
+
+        if field_info["bounding_polygon"] is None and field_info.get("value"):
+            _try_pymupdf_bbox_for_entity(field_info, field_info["source_page"])
 
         out.append((entity_name, field_info))
 
@@ -313,7 +441,6 @@ def _get_intelligence_entities(selected_sheet: str) -> list[tuple[str, dict]]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _get_raw_fields(selected_sheet: str) -> list[tuple[str, dict]]:
-    """Raw Azure DI fields for the current sheet."""
     data = (
         st.session_state
         .get("sheet_cache", {})
@@ -332,11 +459,6 @@ def _get_raw_fields(selected_sheet: str) -> list[tuple[str, dict]]:
 
 
 def _get_all_pages_fields() -> dict[str, dict[str, str]]:
-    """
-    {page_label: {field_name: current_value}} for ALL pages in the PDF.
-    Uses sheet_cache for visited pages; feature store for unvisited ones.
-    Edited values take precedence.
-    """
     eds          = _edits()
     cache        = st.session_state.get("sheet_cache", {})
     sheet_names  = st.session_state.get("sheet_names", list(cache.keys()))
@@ -398,12 +520,10 @@ def _edit_history() -> dict:
 
 
 def _sync_edit(field_name: str, new_value: str, selected_sheet: str) -> None:
-    """Persist an edit to sheet_cache, intelligence entities, _pdf_edits, and history."""
     eds  = _edits()
     hist = _edit_history()
     old  = eds.get(field_name)
 
-    # Update sheet_cache raw field
     data = (
         st.session_state.get("sheet_cache", {})
         .get(selected_sheet, {})
@@ -416,7 +536,6 @@ def _sync_edit(field_name: str, new_value: str, selected_sheet: str) -> None:
             page_dict[field_name]["modified"] = new_value
             break
 
-    # Update intelligence entities
     intel    = st.session_state.get("_pdf_intelligence", {})
     entities = intel.get("analysis", {}).get("entities", {})
     if field_name in entities and isinstance(entities[field_name], dict):
@@ -434,7 +553,6 @@ def _sync_edit(field_name: str, new_value: str, selected_sheet: str) -> None:
             "to":        new_value,
         })
 
-    # Invalidate the Azure DI lookup cache so it's rebuilt on next render
     st.session_state.pop("_adi_lookup", None)
 
 
@@ -450,38 +568,39 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
     extracted_value  = field_info.get("value", "")
     confidence       = _lookup_confidence(field_name, field_info)
     conf_pct         = int(confidence * 100)
-    conf_hex         = "#34d399" if conf_pct >= 80 else "#f5c842" if conf_pct >= 60 else "#f87171"
+    conf_hex         = "#16a34a" if conf_pct >= 80 else "#ca8a04" if conf_pct >= 60 else "#dc2626"
+    conf_bg          = "#f0fdf4" if conf_pct >= 80 else "#fefce8" if conf_pct >= 60 else "#fef2f2"
     conf_rgb         = (
-        (0.20, 0.83, 0.60) if conf_pct >= 80 else
-        (0.96, 0.78, 0.26) if conf_pct >= 60 else
-        (0.97, 0.44, 0.44)
+        (0.09, 0.64, 0.26) if conf_pct >= 80 else
+        (0.79, 0.54, 0.02) if conf_pct >= 60 else
+        (0.86, 0.15, 0.15)
     )
 
-    # Info header card
     st.markdown(
-        f"<div style='background:#12121c;border:1px solid #2a2a45;border-radius:8px;"
-        f"padding:14px 16px;margin-bottom:14px;'>"
+        f"<div style='background:{_BG};border:1px solid {_BORDER};"
+        f"border-radius:8px;padding:14px 16px;margin-bottom:14px;'>"
         f"<div style='display:flex;justify-content:space-between;align-items:flex-start;'>"
         f"<div>"
         f"<div style='font-size:9px;color:{_LBL};font-family:monospace;"
         f"text-transform:uppercase;letter-spacing:1px;'>LLM-Extracted Field</div>"
-        f"<div style='font-size:16px;font-weight:700;color:#a78bfa;"
+        f"<div style='font-size:16px;font-weight:700;color:#7c3aed;"
         f"font-family:monospace;margin-top:2px;'>{field_name}</div>"
         f"</div>"
         f"<div style='text-align:right;'>"
         f"<div style='font-size:9px;color:{_LBL};font-family:monospace;"
-        f"text-transform:uppercase;letter-spacing:1px;'>Azure DI Confidence</div>"
+        f"text-transform:uppercase;letter-spacing:1px;'>Extraction Confidence</div>"
         f"<div style='font-size:28px;font-weight:800;color:{conf_hex};"
         f"font-family:monospace;margin-top:2px;'>"
         f"{'N/A' if conf_pct == 0 else f'{conf_pct}%'}</div>"
         f"</div></div>"
-        f"<div style='height:1px;background:#1e1e30;margin:10px 0;'></div>"
+        f"<div style='height:1px;background:{_BORDER};margin:10px 0;'></div>"
         f"<div style='font-size:9px;color:{_LBL};font-family:monospace;"
         f"text-transform:uppercase;letter-spacing:1px;'>Extracted Value</div>"
         f"<div style='font-size:13px;color:{_TXT};font-family:monospace;"
-        f"background:#0d0d1a;padding:7px 10px;border-radius:4px;margin-top:4px;"
-        f"word-break:break-word;'>{extracted_value or '—'}</div>"
-        f"<div style='margin-top:8px;font-size:10px;color:#555;font-family:monospace;'>"
+        f"background:{_BG2};padding:7px 10px;border-radius:4px;margin-top:4px;"
+        f"word-break:break-word;border:1px solid {_BORDER};'>"
+        f"{extracted_value or '—'}</div>"
+        f"<div style='margin-top:8px;font-size:10px;color:{_LBL};font-family:monospace;'>"
         f"Source: Page {source_page} &nbsp;·&nbsp; "
         f"Bounding box: {'✓ available' if bounding_polygon else '✗ not available'}"
         f"</div></div>",
@@ -516,7 +635,6 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
         pw_pts = page.rect.width
         ph_pts = page.rect.height
 
-        # Convert inch coordinates → PDF points
         sx  = pw_pts / page_width
         sy  = ph_pts / page_height
         pts = [(x * sx, y * sy) for x, y in bounding_polygon]
@@ -525,7 +643,6 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
         x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
         bbox = fitz.Rect(x0, y0, x1, y1)
 
-        # ── Coloured highlight rectangle ──────────────────────────────────────
         shape = page.new_shape()
         shape.draw_rect(bbox)
         shape.finish(
@@ -536,12 +653,11 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
         )
         shape.commit()
 
-        # ── Confidence pill drawn above the bounding box ──────────────────────
         if conf_pct > 0:
             label  = f"  {conf_pct}% confidence  "
-            char_w = 5.6                              # estimated pts per char at font=8
+            char_w = 5.6
             pill_w = len(label) * char_w
-            ly     = max(y0 - 14, 10)                 # y of pill bottom edge
+            ly     = max(y0 - 14, 10)
             lrect  = fitz.Rect(x0, ly - 13, x0 + pill_w, ly + 2)
 
             pill = page.new_shape()
@@ -553,10 +669,9 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
                 fitz.Point(x0 + 3, ly - 1),
                 f"{conf_pct}% confidence",
                 fontsize=8,
-                color=(0.04, 0.04, 0.04),
+                color=(1.0, 1.0, 1.0),
             )
 
-        # ── Zoomed crop ───────────────────────────────────────────────────────
         PAD  = 60
         crop = fitz.Rect(
             max(0,      x0 - PAD),
@@ -567,9 +682,9 @@ def _render_bbox_content(field_name: str, field_info: dict, pdf_path: str) -> No
         pix_zoom = page.get_pixmap(matrix=fitz.Matrix(2.8, 2.8), clip=crop)
 
         st.markdown(
-            "<div style='font-size:11px;font-weight:700;color:#c4c4e8;"
-            "font-family:monospace;text-transform:uppercase;letter-spacing:1.5px;"
-            "margin-bottom:8px;'>🔍 Zoomed View</div>",
+            f"<div style='font-size:11px;font-weight:700;color:{_TXT2};"
+            f"font-family:monospace;text-transform:uppercase;letter-spacing:1.5px;"
+            f"margin-bottom:8px;'>🔍 Zoomed View</div>",
             unsafe_allow_html=True,
         )
         st.image(pix_zoom.tobytes("png"), use_container_width=True)
@@ -607,36 +722,35 @@ def _render_entities_tab(
     selected_sheet: str,
     pdf_path: str | None,
 ) -> None:
-    import streamlit as st
- 
     intel_fields = _get_intelligence_entities(selected_sheet)
     eds          = _edits()
- 
-    # ── Diagnostic block when LLM returned no entities ───────────────────────
+
     if not intel_fields:
         intel    = st.session_state.get("_pdf_intelligence", {})
         analysis = intel.get("analysis", {})
- 
+
         has_intel = bool(intel)
         has_summ  = bool(analysis.get("summary", "").strip())
         has_ents  = bool(analysis.get("entities"))
         has_ts    = bool(analysis.get("type_specific"))
         has_sigs  = bool(analysis.get("signals"))
         doc_type  = intel.get("doc_type", "")
- 
+
         def _pill(label: str, ok: bool) -> str:
-            c = "#34d399" if ok else "#f87171"
+            c  = "#16a34a" if ok else "#dc2626"
+            bg = "#f0fdf4" if ok else "#fef2f2"
             return (
-                f"<span style='background:{c}18;border:1px solid {c}55;"
+                f"<span style='background:{bg};border:1px solid {c}40;"
                 f"border-radius:20px;padding:3px 10px;font-size:10px;"
                 f"color:{c};font-family:monospace;'>"
                 f"{'✓' if ok else '✗'} {label}</span>"
             )
- 
+
         st.markdown(
-            f"<div style='background:#12121c;border:1px solid #2a2a45;"
-            f"border-radius:8px;padding:14px 16px;margin-bottom:12px;'>"
-            f"<div style='font-size:11px;font-weight:700;color:#f5c842;"
+            f"<div style='background:{_BG};border:1px solid #fde68a;"
+            f"border-left:4px solid #ca8a04;border-radius:8px;"
+            f"padding:14px 16px;margin-bottom:12px;'>"
+            f"<div style='font-size:11px;font-weight:700;color:#b45309;"
             f"font-family:monospace;margin-bottom:10px;'>"
             f"⚠ LLM entity extraction returned 0 fields</div>"
             f"<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;'>"
@@ -647,24 +761,20 @@ def _render_entities_tab(
             f"{_pill('Signals', has_sigs)}"
             f"{_pill('Doc type: ' + doc_type if doc_type else 'Doc type', bool(doc_type))}"
             f"</div>"
-            f"<div style='font-size:11px;color:#8888bb;font-family:monospace;line-height:1.6;'>"
-            f"<b style='color:#f5c842;'>Most likely cause:</b> The LLM's JSON response "
-            f"exceeded the token limit and was truncated mid-object, causing json.loads() "
-            f"to fail. This is fixed in <b>pdf_intelligence.py v3</b> which splits the "
-            f"analysis into two smaller calls. If you are still on v2, please upgrade.<br><br>"
-            f"To diagnose: set <code>PDF_INTEL_DEBUG=1</code> in your environment variables, "
-            f"re-run, then expand the debug panel below."
+            f"<div style='font-size:11px;color:{_LBL};font-family:monospace;line-height:1.6;'>"
+            f"<b style='color:#b45309;'>Most likely cause:</b> The LLM's JSON response "
+            f"exceeded the token limit and was truncated mid-object. "
+            f"Try setting <code>PDF_INTEL_DEBUG=1</code> to diagnose."
             f"</div></div>",
             unsafe_allow_html=True,
         )
- 
-        # ── Debug panel (only when PDF_INTEL_DEBUG=1 is set) ─────────────────
+
         debug_data = st.session_state.get("_pdf_intel_debug", {})
         if debug_data:
-            with st.expander("🔬 LLM Debug Output (PDF_INTEL_DEBUG=1)"):
+            with st.expander("🔬 Debug Output"):
                 for key, val in debug_data.items():
                     st.markdown(
-                        f"<div style='font-size:10px;font-weight:700;color:#a78bfa;"
+                        f"<div style='font-size:10px;font-weight:700;color:#7c3aed;"
                         f"font-family:monospace;margin-bottom:4px;"
                         f"text-transform:uppercase;'>{key}</div>",
                         unsafe_allow_html=True,
@@ -672,13 +782,12 @@ def _render_entities_tab(
                     st.code(val[:3000] if len(val) > 3000 else val, language="json")
         elif intel:
             st.markdown(
-                f"<div style='font-size:10px;color:#555;font-family:monospace;"
+                f"<div style='font-size:10px;color:{_LBL};font-family:monospace;"
                 f"margin-bottom:8px;'>💡 Set env var <code>PDF_INTEL_DEBUG=1</code> "
-                f"and re-run to capture raw LLM responses for diagnosis.</div>",
+                f"and re-run to capture raw LLM responses.</div>",
                 unsafe_allow_html=True,
             )
- 
-        # ── Re-run button ─────────────────────────────────────────────────────
+
         col_btn, _ = st.columns([2, 5])
         with col_btn:
             if st.button("🔄 Re-run AI Analysis", use_container_width=True,
@@ -687,66 +796,64 @@ def _render_entities_tab(
                             "_adi_lookup", "_pdf_intel_debug", "_pdf_summary_override"):
                     st.session_state.pop(key, None)
                 st.rerun()
- 
-        # ── Fallback: show raw Azure DI fields ────────────────────────────────
+
         raw = _get_raw_fields(selected_sheet)
         if not raw:
             st.info("No fields extracted for this page yet.")
             return
- 
+
         st.markdown(
             f"<div style='font-size:11px;color:{_LBL};font-family:monospace;"
-            f"margin:8px 0 12px 0;background:#0d0d1a;border:1px solid #2a2a45;"
+            f"margin:8px 0 12px 0;background:{_BG2};border:1px solid {_BORDER};"
             f"border-radius:6px;padding:8px 12px;'>"
-            f"📋 Falling back to raw Azure Document Intelligence fields.<br>"
-            f"Bounding boxes and confidence scores are still available via 👁</div>",
+            f"📋 Falling back to raw Azure Document Intelligence fields.</div>",
             unsafe_allow_html=True,
         )
         intel_fields = raw
- 
+
     # ── Normal render ─────────────────────────────────────────────────────────
     bbox_count = sum(1 for _, fi in intel_fields if fi.get("bounding_polygon"))
     adi_count  = sum(
         1 for _, fi in intel_fields
         if fi.get("azure_di_key") or fi.get("_adi_confidence", 0) > 0
     )
- 
+
     st.markdown(
         _section_header(
             "Extracted Entities",
             (
                 f"{len(intel_fields)} field(s) · "
-                f"{adi_count} Azure DI matched · "
+                f"{adi_count} matched · "
                 f"{bbox_count} with bounding box"
             ),
         ),
         unsafe_allow_html=True,
     )
- 
+
     _HDR = (
-        "font-size:10px;font-weight:700;font-family:monospace;"
-        "text-transform:uppercase;letter-spacing:1.5px;"
-        "padding:6px 4px;border-bottom:1px solid #2a2a45;"
+        f"font-size:10px;font-weight:700;font-family:monospace;"
+        f"text-transform:uppercase;letter-spacing:1.5px;"
+        f"padding:6px 4px;border-bottom:1px solid {_BORDER};"
     )
     h1, h2, h3, h4 = st.columns([2.5, 3.5, 3.5, 1.0])
     h1.markdown(f"<div style='{_HDR}color:{_LBL};'>Field Name</div>",
                 unsafe_allow_html=True)
-    h2.markdown(f"<div style='{_HDR}color:#34d399;'>Extracted</div>",
+    h2.markdown(f"<div style='{_HDR}color:#059669;'>Extracted</div>",
                 unsafe_allow_html=True)
-    h3.markdown(f"<div style='{_HDR}color:#4f9cf9;'>Modified</div>",
+    h3.markdown(f"<div style='{_HDR}color:#2563eb;'>Modified</div>",
                 unsafe_allow_html=True)
     h4.markdown(f"<div style='{_HDR}color:{_LBL};text-align:center;'>Actions</div>",
                 unsafe_allow_html=True)
- 
+
     st.markdown("<div style='height:4px;'></div>", unsafe_allow_html=True)
- 
+
     _EM_KEY = "_pdf_edit_mode_fields"
     if _EM_KEY not in st.session_state:
         st.session_state[_EM_KEY] = set()
- 
+
     _bbox_pending_name: str | None  = None
     _bbox_pending_info: dict | None = None
- 
+
     for field_name, field_info in intel_fields:
         extracted  = field_info.get("value", "")
         modified   = eds.get(field_name, field_info.get("modified", extracted))
@@ -755,9 +862,9 @@ def _render_entities_tab(
         is_changed = modified != extracted
         confidence = _lookup_confidence(field_name, field_info)
         conf_pct   = int(confidence * 100)
- 
+
         c1, c2, c3, c4 = st.columns([2.5, 3.5, 3.5, 1.0])
- 
+
         with c1:
             st.markdown(
                 f"<div style='font-size:12px;font-weight:600;color:{_TXT};"
@@ -767,18 +874,18 @@ def _render_entities_tab(
                    if conf_pct > 0 else ""),
                 unsafe_allow_html=True,
             )
- 
+
         with c2:
             st.markdown(
                 f"<div style='font-size:12px;color:{_TXT};font-family:monospace;"
-                f"background:#0d0d1a;border:1px solid #1e1e30;"
+                f"background:{_BG2};border:1px solid {_BORDER};"
                 f"padding:7px 10px;border-radius:5px;min-height:34px;"
                 f"line-height:1.5;white-space:pre-wrap;word-break:break-word;'>"
-                f"{extracted if extracted else '<span style=\"color:#3a3a55;\">—</span>'}"
+                f"{extracted if extracted else f'<span style=\"color:{_LBL2};\">—</span>'}"
                 f"</div>",
                 unsafe_allow_html=True,
             )
- 
+
         with c3:
             if in_edit:
                 st.text_input(
@@ -787,25 +894,25 @@ def _render_entities_tab(
                 )
             else:
                 _badge = (
-                    f"<span style='margin-left:6px;font-size:9px;color:#4f9cf9;"
-                    f"border:1px solid #4f9cf9;border-radius:10px;padding:1px 5px;"
-                    f"white-space:nowrap;'>✏ edited</span>"
+                    f"<span style='margin-left:6px;font-size:9px;color:#2563eb;"
+                    f"border:1px solid #2563eb;border-radius:10px;padding:1px 5px;"
+                    f"white-space:nowrap;background:#eff6ff;'>✏ edited</span>"
                     if is_changed else ""
                 )
-                _css = (
-                    f"color:{_TXT};background:#0d1a2d;border:1px solid #1e3a5f;"
+                _bg_css = (
+                    f"color:{_TXT};background:#eff6ff;border:1px solid #bfdbfe;"
                     if is_changed else
-                    f"color:{_TXT};background:#0d0d1a;border:1px solid #1e1e30;"
+                    f"color:{_TXT};background:{_BG2};border:1px solid {_BORDER};"
                 )
                 st.markdown(
-                    f"<div style='font-size:12px;font-family:monospace;{_css}"
+                    f"<div style='font-size:12px;font-family:monospace;{_bg_css}"
                     f"padding:7px 10px;border-radius:5px;min-height:34px;"
                     f"line-height:1.5;white-space:pre-wrap;word-break:break-word;'>"
-                    f"{modified if modified else '<span style=\"color:#3a3a55;\">—</span>'}"
+                    f"{modified if modified else f'<span style=\"color:{_LBL2};\">—</span>'}"
                     f"{_badge}</div>",
                     unsafe_allow_html=True,
                 )
- 
+
         with c4:
             be, beye = st.columns(2)
             with be:
@@ -820,34 +927,31 @@ def _render_entities_tab(
                     else:
                         st.session_state[_EM_KEY].add(field_name)
                     st.rerun()
- 
+
             with beye:
                 if has_bbox:
-                    tip = f"View in document · Azure DI confidence: {conf_pct}%"
+                    tip = f"View in document · Confidence: {conf_pct}%"
                 else:
-                    tip = "No Azure DI bounding box available for this field"
+                    tip = "No bounding box available for this field"
                 if st.button("👁", key=f"_pbtn_eye_{field_name}", help=tip,
                              disabled=not has_bbox, use_container_width=True):
                     _bbox_pending_name = field_name
                     _bbox_pending_info = field_info
- 
+
         st.markdown(
-            "<div style='height:1px;background:#1a1a2e;margin:2px 0 4px 0;'></div>",
+            f"<div style='height:1px;background:{_BORDER};margin:2px 0 4px 0;'></div>",
             unsafe_allow_html=True,
         )
- 
+
     if _bbox_pending_name and _bbox_pending_info is not None:
         _bbox_popup(_bbox_pending_name, _bbox_pending_info, pdf_path or "")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SUMMARY HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _get_intelligence_kv(selected_sheet: str) -> dict[str, str]:
-    """
-    Return {field_name: current_value} for all LLM-extracted intelligence entities.
-    Uses modified (edited) values where available. Falls back to raw Azure DI fields.
-    """
     intel_fields = _get_intelligence_entities(selected_sheet)
     eds          = _edits()
 
@@ -861,19 +965,13 @@ def _get_intelligence_kv(selected_sheet: str) -> dict[str, str]:
 
 
 def _regenerate_summary(intelligence: dict, selected_sheet: str) -> str | None:
-    """
-    Call the LLM to regenerate a summary using the CURRENT (possibly edited)
-    field values. Returns the new summary string, or None on failure.
-    """
-    doc_type = intelligence.get("doc_type", "Legal")
+    doc_type  = intelligence.get("doc_type", "Legal")
     full_text = intelligence.get("full_text", "")
 
-    # Build current state of all fields (modified values take precedence)
     current_kv = _get_intelligence_kv(selected_sheet)
     eds        = _edits()
     hist       = _edit_history()
 
-    # Build a concise "current fields" block for the prompt
     field_lines = []
     for fname, val in current_kv.items():
         orig = ""
@@ -888,32 +986,25 @@ def _regenerate_summary(intelligence: dict, selected_sheet: str) -> str | None:
 
     system_prompt = (
         f"You are a senior insurance document analyst. "
-        f"You will be given the current (potentially user-edited) field values "
-        f"extracted from a {doc_type} insurance document, along with the original "
-        f"document text. Generate a concise factual summary (max 200 words) that "
-        f"reflects the CURRENT field values — use the edited values, not the originals "
-        f"where they differ. Do not include field names in the summary; write natural prose. "
+        f"Generate a concise factual summary (max 200 words) of this {doc_type} insurance "
+        f"document reflecting CURRENT field values. Write natural prose — no field names. "
         f"Return ONLY the summary text with no preamble."
     )
-
     user_prompt = (
         f"Document type: {doc_type}\n\n"
-        f"CURRENT FIELD VALUES (use these — some may have been edited by the user):\n"
-        f"{fields_block}\n\n"
-        f"ORIGINAL DOCUMENT TEXT (for context only — defer to field values above):\n"
-        f"{full_text[:4000]}"
+        f"CURRENT FIELD VALUES:\n{fields_block}\n\n"
+        f"ORIGINAL DOCUMENT TEXT (context only):\n{full_text[:4000]}"
         + ("\n[... truncated ...]" if len(full_text) > 4000 else "")
     )
 
     try:
-        import os, re
         from openai import AzureOpenAI
         client = AzureOpenAI(
             azure_endpoint=os.environ.get("OPENAI_DEPLOYMENT_ENDPOINT", ""),
             api_key=os.environ.get("OPENAI_API_KEY", ""),
             api_version=os.environ.get("OPENAI_API_VERSION", "2024-12-01-preview"),
         )
-        deployment = os.environ.get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+        deployment = os.environ.get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")  # standard model; name not surfaced in UI
         response   = client.chat.completions.create(
             model=deployment,
             max_tokens=400,
@@ -940,12 +1031,11 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
     meta     = _DOC_TYPE_META.get(doc_type, _DOC_TYPE_META["Legal"])
     conf     = clf.get("confidence", 0.5)
 
-    # Use regenerated summary if available, else original LLM summary
     _SUMM_KEY = "_pdf_summary_override"
     summary   = st.session_state.get(_SUMM_KEY) or intelligence.get("analysis", {}).get("summary", "")
 
     st.markdown(
-        f"<div style='background:{meta['bg']};border:1px solid {meta['color']}40;"
+        f"<div style='background:{meta['bg']};border:1px solid {meta['color']}30;"
         f"border-left:4px solid {meta['color']};border-radius:8px;"
         f"padding:14px 18px;margin-bottom:16px;'>"
         f"<div style='display:flex;align-items:center;gap:12px;'>"
@@ -959,7 +1049,6 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
         unsafe_allow_html=True,
     )
 
-    # ── Regenerate button row ──────────────────────────────────────────────────
     eds  = _edits()
     hist = _edit_history()
     changed = [(fn, h) for fn, h in hist.items() if h]
@@ -967,25 +1056,21 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
 
     btn_col, status_col = st.columns([2, 6])
     with btn_col:
-        regen_label = "🔄 Re-regenerate Summary" if is_regenerated else "🔄 Regenerate with Edits"
-        regen_help  = (
-            "Re-generate the summary using your edited field values. "
-            "The LLM will use the modified values as ground truth."
-        )
+        regen_label    = "🔄 Re-regenerate Summary" if is_regenerated else "🔄 Regenerate with Edits"
         regen_disabled = not changed
         if st.button(
             regen_label,
             key="_regen_summary_btn",
-            help=regen_help if not regen_disabled else "Make edits in the Entities tab first",
+            help="Regenerate summary using edited field values" if not regen_disabled else "Make edits in the Entities tab first",
             disabled=regen_disabled,
             use_container_width=True,
         ):
-            with st.spinner("🧠 Regenerating summary with edited values…"):
+            with st.spinner("Regenerating summary…"):
                 new_summary = _regenerate_summary(intelligence, selected_sheet)
             if new_summary:
                 st.session_state[_SUMM_KEY] = new_summary
                 summary = new_summary
-                st.toast("✅ Summary regenerated with your edits!")
+                st.toast("✅ Summary regenerated!")
                 st.rerun()
             else:
                 st.error("Could not regenerate summary — LLM unavailable.")
@@ -993,28 +1078,25 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
     with status_col:
         if is_regenerated:
             st.markdown(
-                f"<div style='font-size:11px;color:#34d399;font-family:monospace;"
+                f"<div style='font-size:11px;color:#16a34a;font-family:monospace;"
                 f"padding-top:8px;'>✓ Showing regenerated summary · based on edited values</div>",
                 unsafe_allow_html=True,
             )
         elif changed:
             st.markdown(
-                f"<div style='font-size:11px;color:#f5c842;font-family:monospace;"
+                f"<div style='font-size:11px;color:#ca8a04;font-family:monospace;"
                 f"padding-top:8px;'>⚠ {len(changed)} field(s) edited — click Regenerate to update summary</div>",
                 unsafe_allow_html=True,
             )
 
     if st.session_state.get(_SUMM_KEY):
-        if st.button("↩ Reset to original summary", key="_reset_summary_btn",
-                     help="Discard regenerated summary and show the original"):
+        if st.button("↩ Reset to original summary", key="_reset_summary_btn"):
             st.session_state.pop(_SUMM_KEY, None)
             st.rerun()
 
     st.markdown(_section_header("Document Summary"), unsafe_allow_html=True)
 
     if summary:
-        # Inline-annotate old values → new values only in the original summary
-        # (the regenerated summary already has the correct values baked in)
         annotated = summary
         if not is_regenerated:
             for fname, new_val in eds.items():
@@ -1025,28 +1107,27 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
                 if old_val and old_val != new_val and old_val in annotated:
                     annotated = annotated.replace(
                         old_val,
-                        f"<span style='background:#1e3a5f;color:#4f9cf9;"
+                        f"<span style='background:#eff6ff;color:#2563eb;"
                         f"border-radius:3px;padding:0 3px;font-weight:600;"
-                        f"border-bottom:2px solid #4f9cf9;'"
+                        f"border-bottom:2px solid #2563eb;'"
                         f"title='Edited from: {old_val}'>{new_val}</span>",
                         1,
                     )
 
-        border_color = "#34d399" if is_regenerated else meta["color"]
+        border_color = "#16a34a" if is_regenerated else meta["color"]
         label_html   = (
-            f"<div style='font-size:9px;font-weight:700;color:#34d399;"
+            f"<div style='font-size:9px;font-weight:700;color:#16a34a;"
             f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
-            f"margin-bottom:6px;'>✓ Regenerated summary — uses your edited values</div>"
+            f"margin-bottom:6px;'>✓ Regenerated — uses your edited values</div>"
             if is_regenerated else ""
         )
         st.markdown(
-            f"<div style='background:#0d0d1a;border:1px solid {border_color}30;"
+            f"<div style='background:{_BG2};border:1px solid {border_color}30;"
             f"border-radius:8px;padding:16px 20px;font-size:13px;color:{_TXT};"
             f"line-height:1.9;'>{label_html}{annotated}</div>",
             unsafe_allow_html=True,
         )
 
-        # Show edited field diff table
         if changed and not is_regenerated:
             rows_html = ""
             for fname, fchanges in changed:
@@ -1054,24 +1135,24 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
                 new_v = eds.get(fname, fchanges[-1].get("to", "—"))
                 rows_html += (
                     f"<div style='display:grid;grid-template-columns:180px 1fr auto 1fr;"
-                    f"gap:8px;padding:6px 0;border-bottom:1px solid #1a1a2e;align-items:center;'>"
+                    f"gap:8px;padding:6px 0;border-bottom:1px solid {_BORDER};align-items:center;'>"
                     f"<span style='font-size:11px;font-weight:600;color:{_TXT};"
                     f"font-family:monospace;'>{fname}</span>"
                     f"<span style='font-size:11px;color:{_LBL};font-family:monospace;"
                     f"text-decoration:line-through;word-break:break-word;'>{old_v}</span>"
                     f"<span style='font-size:13px;color:{_LBL};'>→</span>"
-                    f"<span style='font-size:11px;color:#4f9cf9;font-family:monospace;"
+                    f"<span style='font-size:11px;color:#2563eb;font-family:monospace;"
                     f"font-weight:600;word-break:break-word;'>{new_v}</span>"
                     f"</div>"
                 )
             st.markdown(
-                f"<div style='background:#0d1a2d;border:1px solid #1e3a5f;"
+                f"<div style='background:#fffbeb;border:1px solid #fde68a;"
                 f"border-radius:8px;padding:12px 16px;margin-top:12px;'>"
-                f"<div style='font-size:10px;font-weight:700;color:#f5c842;"
+                f"<div style='font-size:10px;font-weight:700;color:#b45309;"
                 f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
                 f"margin-bottom:6px;'>⚠ {len(changed)} Pending Edit(s)</div>"
                 f"<div style='font-size:9px;color:{_LBL};font-family:monospace;"
-                f"margin-bottom:8px;'>These edits are not yet in the summary above. "
+                f"margin-bottom:8px;'>These edits are not yet in the summary. "
                 f"Click \"Regenerate with Edits\" to update it.</div>"
                 f"{rows_html}</div>",
                 unsafe_allow_html=True,
@@ -1084,11 +1165,11 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
     st.markdown(
         f"<div style='display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;'>"
         + "".join(
-            f"<div style='background:#17172a;border:1px solid #2a2a45;"
+            f"<div style='background:{_BG2};border:1px solid {_BORDER};"
             f"border-radius:6px;padding:8px 14px;'>"
-            f"<div style='font-size:9px;color:#555;font-family:monospace;"
+            f"<div style='font-size:9px;color:{_LBL};font-family:monospace;"
             f"text-transform:uppercase;letter-spacing:1px;'>{lbl}</div>"
-            f"<div style='font-size:14px;font-weight:700;color:#4f9cf9;"
+            f"<div style='font-size:14px;font-weight:700;color:#2563eb;"
             f"font-family:monospace;margin-top:2px;'>{val}</div></div>"
             for lbl, val in [
                 ("Pages", page_count),
@@ -1103,11 +1184,10 @@ def _render_summary_tab(intelligence: dict, selected_sheet: str) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TAB 3 — SIGNALS  (severity taxonomy)
+# TAB 3 — SIGNALS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _classify_severity(sig: dict) -> str:
-    # LLM-assigned level (preferred)
     llm = (sig.get("severity_level") or "").strip().title()
     if llm in _TAXONOMY:
         return llm
@@ -1141,9 +1221,9 @@ def _render_signals_tab(intelligence: dict) -> None:
     if not signals:
         st.markdown(
             _card(
-                f"<div style='color:#34d399;font-size:13px;font-family:monospace;'>"
+                f"<div style='color:#16a34a;font-size:13px;font-family:monospace;'>"
                 f"✓ No significant signals detected.</div>",
-                border_color="#34d39940", bg="#0a1f14",
+                border_color="#bbf7d0", bg="#f0fdf4",
             ),
             unsafe_allow_html=True,
         )
@@ -1153,10 +1233,9 @@ def _render_signals_tab(intelligence: dict) -> None:
     for sig in signals:
         grouped[_classify_severity(sig)].append(sig)
 
-    # Summary pills
     pills = "".join(
-        f"<span style='background:{_TAXONOMY[lv]['color']}18;"
-        f"border:1px solid {_TAXONOMY[lv]['color']}55;border-radius:20px;"
+        f"<span style='background:{_TAXONOMY[lv]['bg']};"
+        f"border:1px solid {_TAXONOMY[lv]['color']}40;border-radius:20px;"
         f"padding:4px 12px;font-size:11px;font-weight:700;"
         f"color:{_TAXONOMY[lv]['color']};font-family:monospace;'>"
         f"{_TAXONOMY[lv]['icon']} {lv} ({len(sigs)})</span>"
@@ -1184,7 +1263,7 @@ def _render_signals_tab(intelligence: dict) -> None:
             f"font-family:monospace;text-transform:uppercase;letter-spacing:1.2px;'>{level}</span>"
             f"<div style='flex:1;height:1px;background:{tc}30;'></div>"
             f"<span style='font-size:10px;color:{tc};font-family:monospace;"
-            f"background:{tc}14;border:1px solid {tc}40;border-radius:10px;"
+            f"background:{tax['bg']};border:1px solid {tc}30;border-radius:10px;"
             f"padding:1px 8px;'>{len(group_sigs)} signal(s)</span>"
             f"</div>",
             unsafe_allow_html=True,
@@ -1195,7 +1274,7 @@ def _render_signals_tab(intelligence: dict) -> None:
             m = _SIGNAL_META.get(sig_type, {"icon": "⚠", "label": sig_type, "color": tc})
             c = m["color"]
             st.markdown(
-                f"<div style='background:#0d0d1a;border:1px solid {c}35;"
+                f"<div style='background:{_BG};border:1px solid {_BORDER};"
                 f"border-left:4px solid {tc};border-radius:8px;"
                 f"padding:12px 16px;margin-bottom:8px;'>"
                 f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;'>"
@@ -1204,7 +1283,7 @@ def _render_signals_tab(intelligence: dict) -> None:
                 f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;'>"
                 f"{m['label']}</span>"
                 f"<span style='margin-left:auto;font-size:9px;color:{tc};"
-                f"background:{tc}18;border:1px solid {tc}40;border-radius:10px;"
+                f"background:{tax['bg']};border:1px solid {tc}30;border-radius:10px;"
                 f"padding:1px 7px;font-family:monospace;white-space:nowrap;'>"
                 f"{tax['icon']} {level}</span>"
                 f"</div>"
@@ -1212,7 +1291,7 @@ def _render_signals_tab(intelligence: dict) -> None:
                 f"{sig.get('description', '')}</div>"
                 + (
                     f"<div style='font-size:11px;color:{_LBL};font-family:monospace;"
-                    f"background:#17172a;border-left:2px solid {c}60;padding:5px 10px;"
+                    f"background:{_BG2};border-left:2px solid {_BORDER2};padding:5px 10px;"
                     f"border-radius:0 4px 4px 0;font-style:italic;'>"
                     f"📄 \"{sig.get('supporting_text', '')}\"</div>"
                     if sig.get("supporting_text") else ""
@@ -1223,54 +1302,43 @@ def _render_signals_tab(intelligence: dict) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TAB 4 — RAW JSON  (LLM-extracted fields, modifications applied)
+# TAB 4 — RAW JSON
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _render_raw_json_tab(intelligence: dict, selected_sheet: str) -> None:
-    """
-    Show the LLM-extracted key-value pairs with modifications applied.
-    Source: intelligence entities (type-specific fields only), NOT raw Azure DI dump.
-    Modified values take precedence over originals.
-    """
     eds  = _edits()
     hist = _edit_history()
 
-    # ── Build the primary KV dict from LLM intelligence entities ─────────────
     intel_kv = _get_intelligence_kv(selected_sheet)
 
     st.markdown(
         _section_header(
             "Extracted Key-Value Pairs",
-            f"{len(intel_kv)} LLM-extracted fields · modifications applied",
+            f"{len(intel_kv)} fields · modifications applied",
         ),
         unsafe_allow_html=True,
     )
 
     if not intel_kv:
-        st.info("No LLM-extracted fields available yet. Run AI analysis first.")
+        st.info("No extracted fields available. Run AI analysis first.")
         return
 
-    # Count how many fields have been edited
     edited_count = sum(1 for fn in intel_kv if fn in eds and eds[fn] != (
         next((fi.get("value","") for nm, fi in _get_intelligence_entities(selected_sheet)
               if nm == fn), "")
     ))
 
-    # Status banner
     if edited_count:
         st.markdown(
-            f"<div style='background:#0d1a2d;border:1px solid #1e3a5f;"
+            f"<div style='background:#eff6ff;border:1px solid #bfdbfe;"
             f"border-radius:6px;padding:8px 14px;margin-bottom:12px;"
-            f"font-size:11px;font-family:monospace;color:#4f9cf9;'>"
+            f"font-size:11px;font-family:monospace;color:#2563eb;'>"
             f"✏ {edited_count} field(s) show modified values below</div>",
             unsafe_allow_html=True,
         )
 
-    # ── JSON preview with visual diff for edited fields ───────────────────────
-    # Build annotated preview (code block shows clean JSON)
     st.code(json.dumps(intel_kv, indent=2, ensure_ascii=False), language="json")
 
-    # ── Diff table: which fields changed ──────────────────────────────────────
     changed = [(fn, h) for fn, h in hist.items() if h and fn in intel_kv]
     if changed:
         rows_html = ""
@@ -1279,38 +1347,37 @@ def _render_raw_json_tab(intelligence: dict, selected_sheet: str) -> None:
             current = eds.get(fname, fchanges[-1].get("to", "—"))
             rows_html += (
                 f"<div style='display:grid;grid-template-columns:180px 1fr auto 1fr;"
-                f"gap:8px;padding:6px 0;border-bottom:1px solid #1a1a2e;align-items:center;'>"
+                f"gap:8px;padding:6px 0;border-bottom:1px solid {_BORDER};align-items:center;'>"
                 f"<span style='font-size:11px;font-weight:600;color:{_TXT};"
                 f"font-family:monospace;'>{fname}</span>"
                 f"<span style='font-size:11px;color:{_LBL};font-family:monospace;"
                 f"text-decoration:line-through;word-break:break-word;'>{orig}</span>"
                 f"<span style='font-size:13px;color:{_LBL};'>→</span>"
-                f"<span style='font-size:11px;color:#34d399;font-family:monospace;"
+                f"<span style='font-size:11px;color:#16a34a;font-family:monospace;"
                 f"font-weight:600;word-break:break-word;'>{current}</span>"
                 f"</div>"
             )
-        with st.expander(f"📋 {len(changed)} modified field(s) — click to see diff"):
+        with st.expander(f"📋 {len(changed)} modified field(s)"):
             st.markdown(
-                f"<div style='background:#0d0d1a;border:1px solid #2a2a45;"
+                f"<div style='background:{_BG};border:1px solid {_BORDER};"
                 f"border-radius:8px;padding:12px 16px;'>"
                 f"<div style='display:grid;grid-template-columns:180px 1fr auto 1fr;"
-                f"gap:8px;padding-bottom:6px;border-bottom:1px solid #2a2a45;margin-bottom:4px;'>"
+                f"gap:8px;padding-bottom:6px;border-bottom:1px solid {_BORDER};margin-bottom:4px;'>"
                 f"<span style='font-size:9px;color:{_LBL};font-family:monospace;"
                 f"text-transform:uppercase;letter-spacing:1px;'>Field</span>"
-                f"<span style='font-size:9px;color:#f87171;font-family:monospace;"
+                f"<span style='font-size:9px;color:#dc2626;font-family:monospace;"
                 f"text-transform:uppercase;letter-spacing:1px;'>Original</span>"
                 f"<span></span>"
-                f"<span style='font-size:9px;color:#34d399;font-family:monospace;"
+                f"<span style='font-size:9px;color:#16a34a;font-family:monospace;"
                 f"text-transform:uppercase;letter-spacing:1px;'>Modified</span>"
                 f"</div>{rows_html}</div>",
                 unsafe_allow_html=True,
             )
 
-    # ── Download buttons ──────────────────────────────────────────────────────
     full_json_str = json.dumps(intel_kv, indent=2, ensure_ascii=False)
     st.markdown(
         f"<div style='font-size:11px;color:{_LBL};font-family:monospace;margin:10px 0;'>"
-        f"⬇ {len(intel_kv)} LLM-extracted fields · modified values included</div>",
+        f"⬇ {len(intel_kv)} fields · modified values included</div>",
         unsafe_allow_html=True,
     )
 
@@ -1328,7 +1395,6 @@ def _render_raw_json_tab(intelligence: dict, selected_sheet: str) -> None:
             st.toast("Copied!")
             st.session_state["_json_clipboard"] = full_json_str
 
-    # ── Full raw text (collapsed) ─────────────────────────────────────────────
     full_text = intelligence.get("full_text", "")
     if full_text:
         st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
@@ -1371,33 +1437,32 @@ def _render_journey_tab(
         if all_ts:
             last_edit_ts = max(all_ts)[:19].replace("T", " ")
 
-    # Pipeline trace header
     st.markdown(
-        f"<div style='background:#12121c;border:1px solid #2a2a45;"
+        f"<div style='background:{_BG2};border:1px solid {_BORDER};"
         f"border-radius:10px;padding:16px 20px;margin-bottom:20px;'>"
-        f"<div style='font-size:10px;font-weight:700;color:#f5c842;"
+        f"<div style='font-size:10px;font-weight:700;color:#b45309;"
         f"font-family:monospace;text-transform:uppercase;letter-spacing:2px;"
         f"margin-bottom:14px;'>⚡ Pipeline Trace</div>"
         f"<div style='display:grid;grid-template-columns:160px 1fr;gap:8px;"
-        f"padding:8px 0;border-bottom:1px solid #1a1a2e;align-items:start;'>"
-        f"<span style='font-size:10px;font-weight:700;color:#f5c842;"
+        f"padding:8px 0;border-bottom:1px solid {_BORDER};align-items:start;'>"
+        f"<span style='font-size:10px;font-weight:700;color:#b45309;"
         f"font-family:monospace;text-transform:uppercase;letter-spacing:.8px;'>"
         f"📄 FILE PARSED</span>"
-        f"<span style='font-size:11px;color:#c8c7f0;font-family:monospace;'>"
+        f"<span style='font-size:11px;color:{_TXT2};font-family:monospace;'>"
         f"→ Fields extracted from uploaded PDF &nbsp;"
-        f"<span style='color:#555;'>{session_start[:19].replace('T',' ') if session_start else now_str}</span>"
+        f"<span style='color:{_LBL};'>{session_start[:19].replace('T',' ') if session_start else now_str}</span>"
         f"</span></div>"
         f"<div style='display:grid;grid-template-columns:160px 1fr;gap:8px;"
         f"padding:8px 0;align-items:start;'>"
-        f"<span style='font-size:10px;font-weight:700;color:#4f9cf9;"
+        f"<span style='font-size:10px;font-weight:700;color:#2563eb;"
         f"font-family:monospace;text-transform:uppercase;letter-spacing:.8px;'>"
         f"✏️ USER EDITS</span>"
-        f"<span style='font-size:11px;color:#c8c7f0;font-family:monospace;'>"
+        f"<span style='font-size:11px;color:{_TXT2};font-family:monospace;'>"
         + (
             f"→ {edit_count} field(s) manually updated &nbsp;"
-            f"<span style='color:#555;'>{last_edit_ts}</span>"
+            f"<span style='color:{_LBL};'>{last_edit_ts}</span>"
             if edit_count else
-            f"→ <span style='color:#555;'>No edits made this session</span>"
+            f"→ <span style='color:{_LBL};'>No edits made this session</span>"
         )
         + f"</span></div></div>",
         unsafe_allow_html=True,
@@ -1408,7 +1473,7 @@ def _render_journey_tab(
     def _step_circle(n: int, color: str) -> str:
         return (
             f"<div style='width:26px;height:26px;border-radius:50%;"
-            f"background:{color}22;border:2px solid {color};"
+            f"background:{color}15;border:2px solid {color};"
             f"display:flex;align-items:center;justify-content:center;"
             f"font-size:11px;font-weight:700;color:{color};"
             f"font-family:monospace;flex-shrink:0;'>{n}</div>"
@@ -1418,13 +1483,13 @@ def _render_journey_tab(
         extracted = finfo.get("value", "")
         changes   = hist.get(fname, [])
         is_mod    = bool(changes)
-        border    = "#f5c842" if is_mod else "#2a2a45"
-        bg        = "#1a1500" if is_mod else "#12121c"
+        border    = "#fde68a" if is_mod else _BORDER
+        bg        = "#fffbeb" if is_mod else _BG
         mod_badge = (
-            "<span style='margin-left:8px;font-size:9px;font-weight:700;"
-            "color:#f5c842;background:#f5c84215;border:1px solid #f5c84250;"
-            "border-radius:10px;padding:2px 8px;font-family:monospace;'>"
-            "MODIFIED</span>"
+            f"<span style='margin-left:8px;font-size:9px;font-weight:700;"
+            f"color:#b45309;background:#fef9c3;border:1px solid #fde047;"
+            f"border-radius:10px;padding:2px 8px;font-family:monospace;'>"
+            f"MODIFIED</span>"
             if is_mod else ""
         )
         src_page = finfo.get("source_page", "")
@@ -1434,47 +1499,45 @@ def _render_journey_tab(
         html = (
             f"<div style='background:{bg};border:1px solid {border};"
             f"border-radius:10px;padding:16px 18px;margin-bottom:12px;'>"
-            f"<div style='font-size:12px;font-weight:700;color:#f0efff;"
+            f"<div style='font-size:12px;font-weight:700;color:{_TXT};"
             f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
             f"margin-bottom:14px;'>{fname}{mod_badge}</div>"
-            # Step 1 — Extracted
             f"<div style='display:flex;gap:12px;margin-bottom:10px;'>"
-            f"{_step_circle(1,'#34d399')}"
+            f"{_step_circle(1,'#16a34a')}"
             f"<div style='flex:1;'>"
             f"<div style='display:flex;justify-content:space-between;align-items:center;"
             f"margin-bottom:4px;'>"
-            f"<span style='font-size:10px;font-weight:700;color:#34d399;"
+            f"<span style='font-size:10px;font-weight:700;color:#16a34a;"
             f"font-family:monospace;text-transform:uppercase;'>Extracted from Document</span>"
-            f"<span style='font-size:9px;color:#555;font-family:monospace;'>"
+            f"<span style='font-size:9px;color:{_LBL};font-family:monospace;'>"
             f"⏱ {step1_ts} · pdf_azure_parser</span>"
             f"</div>"
-            f"<div style='font-size:11px;color:#8888bb;font-family:monospace;"
+            f"<div style='font-size:11px;color:{_LBL};font-family:monospace;"
             f"margin-bottom:5px;'>{'Page ' + str(src_page) if src_page else 'PDF extraction'}</div>"
-            f"<div style='background:#0d0d14;border:1px solid #1e1e30;border-radius:5px;"
-            f"padding:8px 12px;font-size:12px;color:#f0efff;font-family:monospace;"
+            f"<div style='background:{_BG2};border:1px solid {_BORDER};border-radius:5px;"
+            f"padding:8px 12px;font-size:12px;color:{_TXT};font-family:monospace;"
             f"word-break:break-word;min-height:32px;'>"
-            f"{extracted if extracted else '<span style=\"color:#3a3a55;\">—</span>'}"
+            f"{extracted if extracted else f'<span style=\"color:{_LBL2};\">—</span>'}"
             f"</div>"
             + (
-                f"<div style='font-size:10px;color:#555;font-family:monospace;"
-                f"background:#0a0a12;border-left:2px solid #2a2a45;padding:4px 8px;"
+                f"<div style='font-size:10px;color:{_LBL};font-family:monospace;"
+                f"background:{_BG2};border-left:2px solid {_BORDER2};padding:4px 8px;"
                 f"margin-top:5px;border-radius:0 4px 4px 0;font-style:italic;'>"
                 f"📄 {src_text}</div>"
                 if src_text else ""
             )
             + f"</div></div>"
-            # Step 2 — LLM / Direct
             f"<div style='display:flex;gap:12px;margin-bottom:10px;'>"
-            f"{_step_circle(2,'#4f9cf9')}"
+            f"{_step_circle(2,'#2563eb')}"
             f"<div style='flex:1;'>"
             f"<div style='display:flex;justify-content:space-between;align-items:center;"
             f"margin-bottom:4px;'>"
-            f"<span style='font-size:10px;font-weight:700;color:#4f9cf9;"
-            f"font-family:monospace;text-transform:uppercase;'>→ Direct (LLM)</span>"
-            f"<span style='font-size:9px;color:#555;font-family:monospace;'>"
+            f"<span style='font-size:10px;font-weight:700;color:#2563eb;"
+            f"font-family:monospace;text-transform:uppercase;'>→ Direct (AI Extraction)</span>"
+            f"<span style='font-size:9px;color:{_LBL};font-family:monospace;'>"
             f"⏱ {step1_ts} · pdf_intelligence</span>"
             f"</div>"
-            f"<div style='font-size:11px;color:#8888bb;font-family:monospace;'>"
+            f"<div style='font-size:11px;color:{_LBL};font-family:monospace;'>"
             f"Extracted by AI — type-specific field list applied</div>"
             f"</div></div>"
         )
@@ -1485,24 +1548,24 @@ def _render_journey_tab(
             to_v   = ch.get("to", "")
             html += (
                 f"<div style='display:flex;gap:12px;margin-bottom:8px;'>"
-                f"{_step_circle(i+3,'#f5c842')}"
+                f"{_step_circle(i+3,'#ca8a04')}"
                 f"<div style='flex:1;'>"
                 f"<div style='display:flex;justify-content:space-between;align-items:center;"
                 f"margin-bottom:6px;'>"
-                f"<span style='font-size:10px;font-weight:700;color:#f5c842;"
+                f"<span style='font-size:10px;font-weight:700;color:#b45309;"
                 f"font-family:monospace;text-transform:uppercase;'>→ User Edit</span>"
-                f"<span style='font-size:9px;color:#555;font-family:monospace;'>"
+                f"<span style='font-size:9px;color:{_LBL};font-family:monospace;'>"
                 f"⏱ {ts} · _sync_edit()</span>"
                 f"</div>"
                 f"<div style='display:flex;gap:10px;align-items:center;'>"
-                f"<div style='flex:1;background:#1a0000;border:1px solid #f8717140;"
+                f"<div style='flex:1;background:#fef2f2;border:1px solid #fecaca;"
                 f"border-radius:5px;padding:7px 12px;font-size:12px;"
-                f"color:#f87171;font-family:monospace;word-break:break-word;'>"
+                f"color:#dc2626;font-family:monospace;word-break:break-word;'>"
                 f"FROM: {from_v or '—'}</div>"
-                f"<span style='font-size:16px;color:#555;'>→</span>"
-                f"<div style='flex:1;background:#001a0a;border:1px solid #34d39940;"
+                f"<span style='font-size:16px;color:{_LBL};'>→</span>"
+                f"<div style='flex:1;background:#f0fdf4;border:1px solid #bbf7d0;"
                 f"border-radius:5px;padding:7px 12px;font-size:12px;"
-                f"color:#34d399;font-family:monospace;word-break:break-word;'>"
+                f"color:#16a34a;font-family:monospace;word-break:break-word;'>"
                 f"TO: {to_v or '—'}</div>"
                 f"</div></div></div>"
             )
@@ -1518,14 +1581,13 @@ def _render_journey_tab(
             for fname, finfo in unchanged_fields:
                 _field_card(fname, finfo)
 
-    # Audit Log
     st.markdown("<div style='margin-top:24px;'></div>", unsafe_allow_html=True)
     st.markdown(_section_header("Audit Log"), unsafe_allow_html=True)
 
     _EVENT_META = {
-        "FILE_INGESTED":           {"color": "#34d399", "icon": "📄"},
-        "SHEET_PARSED":            {"color": "#4f9cf9", "icon": "🔍"},
-        "SHEET_LOADED_FROM_CACHE": {"color": "#a78bfa", "icon": "💾"},
+        "FILE_INGESTED":           {"color": "#16a34a", "icon": "📄"},
+        "SHEET_PARSED":            {"color": "#2563eb", "icon": "🔍"},
+        "SHEET_LOADED_FROM_CACHE": {"color": "#7c3aed", "icon": "💾"},
     }
 
     try:
@@ -1560,17 +1622,17 @@ def _render_journey_tab(
                 parts.append(f"{entry['claim_rows']} rows")
             detail = " · ".join(parts)
             st.markdown(
-                f"<div style='background:#12121c;border:1px solid #1e1e30;"
+                f"<div style='background:{_BG2};border:1px solid {_BORDER};"
                 f"border-left:3px solid {c};border-radius:6px;"
                 f"padding:9px 14px;margin-bottom:4px;"
                 f"display:flex;align-items:center;gap:12px;'>"
                 f"<span style='font-size:9px;font-weight:700;color:{c};"
-                f"font-family:monospace;background:{c}14;border:1px solid {c}40;"
+                f"font-family:monospace;background:{c}12;border:1px solid {c}30;"
                 f"border-radius:4px;padding:2px 8px;white-space:nowrap;"
                 f"text-transform:uppercase;'>{em['icon']} {event}</span>"
-                f"<span style='font-size:10px;color:#555;font-family:monospace;"
+                f"<span style='font-size:10px;color:{_LBL};font-family:monospace;"
                 f"white-space:nowrap;'>· {ts}</span>"
-                f"<span style='font-size:11px;color:#8888bb;font-family:monospace;'>"
+                f"<span style='font-size:11px;color:{_TXT2};font-family:monospace;'>"
                 f"· {detail}</span>"
                 f"</div>",
                 unsafe_allow_html=True,
@@ -1593,11 +1655,6 @@ def _render_journey_tab(
                 st.session_state[_hk] = not show_h
                 st.rerun()
             if show_h:
-                st.markdown(
-                    f"<div style='font-size:11px;color:{_LBL};font-family:monospace;margin:8px 0;'>"
-                    f"{len(hist_log)} previous session entries</div>",
-                    unsafe_allow_html=True,
-                )
                 for i, e in enumerate(reversed(hist_log[-30:])):
                     _log_row(e, i, "hist")
 
@@ -1606,57 +1663,286 @@ def _render_journey_tab(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TAB 6 — AI ASSESSMENT  (4 judge cards only)
+# TAB 6 — VALIDATION  (replaces AI Assessment; uses enhanced model on demand)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _assessment_card(icon: str, title: str, content: str, color: str, badge: str = "") -> str:
-    return (
-        f"<div style='background:#0d0d1a;border:1px solid {color}35;"
+def _render_validation_dimension(
+    icon: str,
+    title: str,
+    data: dict,
+    color: str,
+) -> None:
+    """Render a single validation dimension card."""
+    score   = data.get("score", 0)
+    verdict = data.get("verdict", "Review")
+    findings = data.get("findings", "")
+
+    st.markdown(
+        f"<div style='background:{_BG};border:1px solid {_BORDER};"
         f"border-left:4px solid {color};border-radius:10px;"
         f"padding:18px 20px;margin-bottom:14px;'>"
-        f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
-        f"<span style='font-size:22px;'>{icon}</span>"
-        f"<span style='font-size:12px;font-weight:700;color:{color};"
-        f"font-family:monospace;text-transform:uppercase;letter-spacing:1.2px;'>{title}</span>"
-        + (
-            f"<span style='margin-left:auto;font-size:10px;color:{color};"
-            f"background:{color}18;border:1px solid {color}40;border-radius:20px;"
-            f"padding:2px 10px;font-family:monospace;white-space:nowrap;'>{badge}</span>"
-            if badge else ""
-        )
-        + f"</div>"
-        f"<div style='font-size:13px;color:{_TXT};line-height:1.85;'>{content}</div>"
-        f"</div>"
+        f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:4px;'>"
+        f"<span style='font-size:20px;'>{icon}</span>"
+        f"<span style='font-size:13px;font-weight:700;color:{_TXT};"
+        f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;'>{title}</span>"
+        f"<div style='margin-left:auto;display:flex;align-items:center;gap:8px;'>"
+        f"{_score_badge(score)}"
+        f"{_verdict_badge(verdict)}"
+        f"</div></div>"
+        f"<div style='height:1px;background:{_BORDER};margin:10px 0;'></div>"
+        f"<div style='font-size:13px;color:{_TXT2};line-height:1.8;'>{findings}</div>",
+        unsafe_allow_html=True,
     )
 
+    # Missed / incorrect fields
+    missed = data.get("missed_fields") or data.get("missed_signals") or data.get("gaps") or []
+    incorrect = data.get("incorrect_fields", [])
+    false_pos = data.get("false_positives", [])
 
-def _render_ai_assessment_tab(intelligence: dict) -> None:
-    judge   = intelligence.get("analysis", {}).get("judge", {})
-    signals = intelligence.get("analysis", {}).get("signals", [])
+    if missed:
+        items_html = "".join(
+            f"<span style='background:#fef2f2;border:1px solid #fecaca;"
+            f"border-radius:4px;padding:2px 8px;font-size:11px;"
+            f"color:#dc2626;font-family:monospace;margin:2px;'>{m}</span>"
+            for m in missed
+        )
+        st.markdown(
+            f"<div style='margin-top:8px;'>"
+            f"<div style='font-size:9px;font-weight:700;color:{_LBL};"
+            f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;'>"
+            f"Missing / Not Detected</div>"
+            f"<div style='display:flex;flex-wrap:wrap;gap:4px;'>{items_html}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown(_section_header("AI Verdict"), unsafe_allow_html=True)
+    if incorrect:
+        rows = "".join(
+            f"<div style='display:grid;grid-template-columns:140px 1fr auto 1fr;"
+            f"gap:8px;padding:5px 0;border-bottom:1px solid {_BORDER};align-items:start;'>"
+            f"<span style='font-size:11px;font-weight:600;color:{_TXT};"
+            f"font-family:monospace;word-break:break-word;'>{item.get('field','')}</span>"
+            f"<span style='font-size:11px;color:#dc2626;font-family:monospace;"
+            f"word-break:break-word;text-decoration:line-through;'>{item.get('extracted','')}</span>"
+            f"<span style='color:{_LBL};font-size:12px;'>→</span>"
+            f"<span style='font-size:11px;color:#16a34a;font-family:monospace;"
+            f"word-break:break-word;'>{item.get('expected','')}</span>"
+            f"</div>"
+            for item in incorrect
+        )
+        st.markdown(
+            f"<div style='margin-top:10px;background:{_BG2};border:1px solid {_BORDER};"
+            f"border-radius:6px;padding:10px 14px;'>"
+            f"<div style='font-size:9px;font-weight:700;color:{_LBL};"
+            f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
+            f"margin-bottom:8px;'>Incorrect Extractions</div>"
+            f"{rows}</div>",
+            unsafe_allow_html=True,
+        )
 
-    cards = [
-        ("🧠", "Classification Rationale",  judge.get("classification_reasoning", ""),
-         "#4f9cf9", "AI Verified"),
-        ("⚡", "Signal Validation",          judge.get("signal_validation",        ""),
-         "#f5c842", f"{len(signals)} signal(s) reviewed"),
-        ("📊", "Data Quality Assessment",    judge.get("data_quality",             ""),
-         "#34d399", "Quality Review"),
-        ("🎯", "Recommendations",            judge.get("recommendations",          ""),
-         "#a78bfa", "Action Required"),
+    if false_pos:
+        items_html = "".join(
+            f"<span style='background:#fffbeb;border:1px solid #fde68a;"
+            f"border-radius:4px;padding:2px 8px;font-size:11px;"
+            f"color:#b45309;font-family:monospace;margin:2px;'>{fp}</span>"
+            for fp in false_pos
+        )
+        st.markdown(
+            f"<div style='margin-top:8px;'>"
+            f"<div style='font-size:9px;font-weight:700;color:{_LBL};"
+            f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;'>"
+            f"Potential False Positives</div>"
+            f"<div style='display:flex;flex-wrap:wrap;gap:4px;'>{items_html}</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _render_validation_tab(intelligence: dict, selected_sheet: str) -> None:
+    """
+    Validation tab: deep quality evaluation on demand.
+    Uses the enhanced AI model (not named in the UI).
+    """
+    st.markdown(_section_header("Document Validation"), unsafe_allow_html=True)
+
+    # ── Intro banner ──────────────────────────────────────────────────────────
+    st.markdown(
+        f"<div style='background:#f0f9ff;border:1px solid #bae6fd;"
+        f"border-left:4px solid #0284c7;border-radius:8px;"
+        f"padding:14px 18px;margin-bottom:18px;'>"
+        f"<div style='font-size:13px;font-weight:600;color:#0369a1;"
+        f"margin-bottom:4px;'>✅ Deep Validation</div>"
+        f"<div style='font-size:12px;color:#0c4a6e;line-height:1.7;'>"
+        f"This validation evaluates extraction accuracy, signal credibility, and coverage "
+        f"completeness using an enhanced reasoning pass over the extracted data. "
+        f"Run on demand — results are cached for this session."
+        f"</div></div>",
+        unsafe_allow_html=True,
+    )
+
+    _VAL_KEY = "_pdf_validation_result"
+    existing = st.session_state.get(_VAL_KEY)
+
+    # ── Run / Re-run button ───────────────────────────────────────────────────
+    btn_label = "🔄 Re-run Validation" if existing else "▶ Run Validation"
+    run_col, _ = st.columns([2, 5])
+    with run_col:
+        run_clicked = st.button(btn_label, key="_run_validation_btn",
+                                use_container_width=True)
+
+    if run_clicked:
+        intel    = st.session_state.get("_pdf_intelligence", {})
+        doc_type = intel.get("doc_type", "Legal")
+        full_text = intel.get("full_text", "")
+        analysis  = intel.get("analysis", {})
+        extracted_entities = analysis.get("entities", {})
+        detected_signals   = analysis.get("signals", [])
+        azure_di_index     = intel.get("azure_di_index", {})
+
+        if not full_text and not extracted_entities:
+            st.error("No extracted data to validate. Run AI analysis first.")
+            return
+
+        with st.spinner("Running validation…"):
+            try:
+                from modules.pdf_intelligence import run_validation  # type: ignore[import]
+                result = run_validation(
+                    full_text=full_text,
+                    doc_type=doc_type,
+                    extracted_entities=extracted_entities,
+                    detected_signals=detected_signals,
+                    azure_di_fields=azure_di_index,
+                )
+                st.session_state[_VAL_KEY] = result
+                existing = result
+                st.toast("✅ Validation complete!")
+            except ImportError:
+                st.error("pdf_intelligence module not found. Cannot run validation.")
+                return
+            except Exception as exc:
+                st.error(f"Validation failed: {exc}")
+                return
+
+    if not existing:
+        st.markdown(
+            f"<div style='background:{_BG2};border:1px solid {_BORDER};"
+            f"border-radius:8px;padding:24px;text-align:center;"
+            f"color:{_LBL};font-family:monospace;font-size:12px;'>"
+            f"Click <strong>▶ Run Validation</strong> to start deep quality evaluation."
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    # ── Overall score banner ──────────────────────────────────────────────────
+    overall = existing.get("overall_validation", {})
+    ov_score   = overall.get("score", 0)
+    ov_verdict = overall.get("verdict", "Review")
+    ov_conf    = int(float(overall.get("confidence", 0.0)) * 100)
+    ov_summary = overall.get("summary", "")
+    ov_color   = "#16a34a" if ov_score >= 80 else "#ca8a04" if ov_score >= 60 else "#dc2626"
+    ov_bg      = "#f0fdf4" if ov_score >= 80 else "#fffbeb" if ov_score >= 60 else "#fef2f2"
+
+    st.markdown(
+        f"<div style='background:{ov_bg};border:2px solid {ov_color}30;"
+        f"border-radius:12px;padding:20px 24px;margin-bottom:22px;'>"
+        f"<div style='display:flex;align-items:center;gap:16px;margin-bottom:10px;'>"
+        f"<div style='text-align:center;'>"
+        f"<div style='font-size:42px;font-weight:900;color:{ov_color};"
+        f"font-family:monospace;line-height:1;'>{ov_score}</div>"
+        f"<div style='font-size:10px;color:{_LBL};font-family:monospace;'>/ 100</div>"
+        f"</div>"
+        f"<div style='flex:1;'>"
+        f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px;'>"
+        f"<span style='font-size:16px;font-weight:800;color:{_TXT};'>Overall Validation Score</span>"
+        f"{_verdict_badge(ov_verdict)}"
+        f"</div>"
+        f"<div style='font-size:12px;color:{_TXT2};line-height:1.7;'>{ov_summary}</div>"
+        f"</div></div>"
+        f"<div style='height:6px;background:{_BORDER};border-radius:3px;overflow:hidden;'>"
+        f"<div style='height:100%;width:{ov_score}%;background:{ov_color};"
+        f"border-radius:3px;transition:width 0.5s;'></div></div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    # ── Per-dimension score pills ─────────────────────────────────────────────
+    dims = [
+        ("extraction_accuracy", "🎯", "Extraction",  "#2563eb"),
+        ("signal_credibility",  "⚡", "Signals",     "#7c3aed"),
+        ("coverage_analysis",   "📋", "Coverage",    "#059669"),
     ]
+    pills_html = ""
+    for key, icon, label, color in dims:
+        d = existing.get(key, {})
+        s = d.get("score", 0)
+        v = d.get("verdict", "—")
+        c2 = "#16a34a" if s >= 80 else "#ca8a04" if s >= 60 else "#dc2626"
+        pills_html += (
+            f"<div style='background:{_BG2};border:1px solid {_BORDER};"
+            f"border-radius:8px;padding:12px 16px;flex:1;min-width:150px;'>"
+            f"<div style='font-size:18px;margin-bottom:4px;'>{icon}</div>"
+            f"<div style='font-size:10px;color:{_LBL};font-family:monospace;"
+            f"text-transform:uppercase;letter-spacing:1px;'>{label}</div>"
+            f"<div style='font-size:24px;font-weight:800;color:{c2};"
+            f"font-family:monospace;margin:4px 0;'>{s}</div>"
+            f"<div style='font-size:10px;color:{_LBL};font-family:monospace;'>{v}</div>"
+            f"</div>"
+        )
 
-    any_content = False
-    for icon, title, content, color, badge in cards:
-        if not content:
-            continue
-        any_content = True
-        st.markdown(_assessment_card(icon, title, content, color, badge=badge),
-                    unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;'>"
+        f"{pills_html}</div>",
+        unsafe_allow_html=True,
+    )
 
-    if not any_content:
-        st.info("AI assessment not available — LLM may not have completed analysis.")
+    # ── Dimension details ─────────────────────────────────────────────────────
+    st.markdown(_section_header("Dimension Details"), unsafe_allow_html=True)
+
+    _render_validation_dimension(
+        "🎯", "Extraction Accuracy",
+        existing.get("extraction_accuracy", {}),
+        "#2563eb",
+    )
+    _render_validation_dimension(
+        "⚡", "Signal Credibility",
+        existing.get("signal_credibility", {}),
+        "#7c3aed",
+    )
+    _render_validation_dimension(
+        "📋", "Coverage Analysis",
+        existing.get("coverage_analysis", {}),
+        "#059669",
+    )
+
+    # ── Recommended actions ───────────────────────────────────────────────────
+    actions = overall.get("recommended_actions", [])
+    if actions:
+        st.markdown(_section_header("Recommended Actions"), unsafe_allow_html=True)
+        for i, action in enumerate(actions, 1):
+            st.markdown(
+                f"<div style='background:{_BG2};border:1px solid {_BORDER};"
+                f"border-radius:6px;padding:10px 16px;margin-bottom:6px;"
+                f"display:flex;gap:12px;align-items:flex-start;'>"
+                f"<span style='font-size:11px;font-weight:700;color:#ffffff;"
+                f"background:#0284c7;border-radius:50%;width:20px;height:20px;"
+                f"display:flex;align-items:center;justify-content:center;"
+                f"flex-shrink:0;font-family:monospace;'>{i}</span>"
+                f"<span style='font-size:13px;color:{_TXT};line-height:1.6;'>{action}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+    # ── Clear button ──────────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
+    _, clr_col = st.columns([5, 2])
+    with clr_col:
+        if st.button("🗑 Clear validation results", key="_clear_validation_btn",
+                     use_container_width=True):
+            st.session_state.pop(_VAL_KEY, None)
+            st.rerun()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1714,7 +2000,7 @@ def render_pdf_analysis_panel(
         f"⚡ Signals ({_signals_count})",
         "📄 Raw JSON",
         "🔄 Transformation Journey",
-        "🧑‍⚖️ AI Assessment",
+        "✅ Validation",
     ])
 
     with tabs[0]:
@@ -1728,4 +2014,4 @@ def render_pdf_analysis_panel(
     with tabs[4]:
         _render_journey_tab(intelligence, selected_sheet, uploaded_name)
     with tabs[5]:
-        _render_ai_assessment_tab(intelligence)
+        _render_validation_tab(intelligence, selected_sheet)

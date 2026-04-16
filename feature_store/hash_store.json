@@ -1,9 +1,13 @@
 {
-  "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d": {
-    "filename": "trellis_docket_Sample_Pdf.pdf",
-    "first_seen": "2026-04-15T12:02:44.920159",
+  "47f14b302b83b7b7409833a0f72996f8757168d2d40475bb984467f1bcbb09cd": {
+    "filename": "loss_runs.xlsx",
+    "first_seen": "2026-04-16T18:04:22.307477",
     "sheet_hashes": {
-      "Page 1": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071"
+      "CGL Loss Run": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de",
+      "Workers Comp Loss Run": "0cf7acbc8312cee26594d8ec3fbb7f2635030d2802b4372264792f948973eeb2",
+      "Commercial Auto Loss Run": "87934a2a9f86f24e3c091e7fadcca9de0af721bca1f4a338e3ee32bf70239539",
+      "Commercial Property Loss Run": "5ba16142b8e6b0e9b0d81b65a4c56690d150becdb4bf60fabb2c15e20ecd7e49",
+      "Prof Liability E&O Loss Run": "b0c7a8f9b38b33a7a3ded43a48b4d8c0277e29671be1c9c90c2b82125920adaf"
     }
   }
 }

@@ -58,7 +58,7 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
         f"<div style='font-size:13px;font-weight:700;color:{banner_color};"
         f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
         f"margin-bottom:6px;'>{banner_icon} {banner_title}</div>"
-        f"<div style='font-size:13px;color:#e8e7ff;font-family:sans-serif;"
+        f"<div style='font-size:13px;color:#0f1117;font-family:sans-serif;"
         f"line-height:1.6;'>{banner_sub}</div>"
         f"</div>",
         unsafe_allow_html=True,

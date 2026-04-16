@@ -35,14 +35,14 @@ LOGO_B64, LOGO_MIME = _load_image_b64("Screenshot 2026-04-14 125311.png")
 BADGE_LOGO_B64, BADGE_LOGO_MIME = _load_image_b64("valuemomentum_logo.jpg")
 
 
-def logo_img_tag(height: int = 52) -> str:
-    """Left navbar logo — Signal Hub."""
+def logo_img_tag(height: int = 200) -> str:
+    """Left navbar logo — Signal Hub. Large height for navbar visibility."""
     if not LOGO_B64:
         return ""
     mime = LOGO_MIME or "image/png"
     return (
         f'<img src="data:{mime};base64,{LOGO_B64}" '
-        f'style="height:{height}px;width:auto;'
+        f'style="height:{height}px;width:auto;transform:scale(1.3);" '
         f'display:inline-block;vertical-align:middle;'
         f'margin-right:18px;flex-shrink:0;" />'
     )

@@ -224,8 +224,9 @@ def _doc_type_enum_to_label(doc_type_enum) -> str | None:
 
 
 # ── Page config ───────────────────────────────────────────────────────────────
-st.set_page_config(layout="wide", page_title="Document Signal Hub", page_icon="🛡️")
+st.set_page_config(layout="wide", page_title=" Document Signal Hub", page_icon="🛡️")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+
 
 for _k, _v in SESSION_DEFAULTS.items():
     if _k not in st.session_state:
@@ -280,7 +281,7 @@ _, col_sheet_dropdown = st.columns([6.8, 1.2])
 
 uploaded = st.file_uploader(
     "Upload Excel/CSV/PDF",
-    type=["xlsx", "csv", "pdf", "docx"],
+    type=["xlsx", "csv", "pdf"],
     accept_multiple_files=False,
     key="main_uploader",
 )

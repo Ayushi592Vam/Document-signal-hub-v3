@@ -1,5 +1,5 @@
 """
-modules/pdf_intelligence.py  — v3 (fix: entities always empty on Streamlit Cloud)
+modules/pdf_intelligence.py  — v4
 
 Root causes fixed:
   1. Single LLM call tried to produce summary + entities + signals + type_specific
@@ -8,18 +8,20 @@ Root causes fixed:
 
   2. bare `except Exception: return None` hid every failure.
 
-  3. On Streamlit Cloud the gpt-4o-mini response for a 25-field Legal doc with
+  3. On Streamlit Cloud the response for a 25-field Legal doc with
      verbatim source_text snippets easily hits 2500 tokens.
 
 Fixes:
   • Split into TWO cheaper calls:
       Call A — entities + signals  (max_tokens=3500)
-      Call B — summary + judge     (max_tokens=1000)
+      Call B — summary + type_specific + judge  (max_tokens=1000)
   • JSON repair: if json.loads() fails, attempt to close truncated JSON before
     giving up (handles the single most common cloud failure mode).
   • Debug mode: set env var PDF_INTEL_DEBUG=1 to surface raw LLM responses in
     st.session_state["_pdf_intel_debug"] for inspection.
   • entities prompt asks for azure_di_key so UI can do exact bbox lookup.
+  • Model routing: standard model for main analysis; enhanced model for validation.
+    Model names are never exposed in the UI.
 """
 
 from __future__ import annotations
@@ -31,32 +33,33 @@ import textwrap
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AZURE OPENAI CLIENT
+# MODEL ROUTING  — internal only, never surfaced in the UI
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _get_secrets() -> dict:
-    """Read secrets from Streamlit Cloud or fallback to os.environ."""
-    try:
-        import streamlit as st
-        return st.secrets
-    except Exception:
-        return os.environ
+def _deployment_standard() -> str:
+    """Model used for classification, entities, signals, summary, judge."""
+    return os.environ.get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
+
+
+def _deployment_enhanced() -> str:
+    """Model used for the Validation tab — higher reasoning capability."""
+    return os.environ.get("OPENAI_DEPLOYMENT_NAME_ENHANCED", "gpt-4o")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AZURE OPENAI CLIENT
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _get_openai_client():
     try:
         from openai import AzureOpenAI
-        s = _get_secrets()
         return AzureOpenAI(
-            azure_endpoint=s.get("OPENAI_DEPLOYMENT_ENDPOINT", ""),
-            api_key=s.get("OPENAI_API_KEY", ""),
-            api_version=s.get("OPENAI_API_VERSION", "2024-12-01-preview"),
+            azure_endpoint=os.environ.get("OPENAI_DEPLOYMENT_ENDPOINT", ""),
+            api_key=os.environ.get("OPENAI_API_KEY", ""),
+            api_version=os.environ.get("OPENAI_API_VERSION", "2024-12-01-preview"),
         )
     except Exception:
         return None
-
-def _deployment() -> str:
-    return _get_secrets().get("OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini")
-   
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -84,7 +87,6 @@ def _repair_json(raw: str) -> str:
         pass
 
     # Count open braces / brackets to figure out what needs closing
-    # Walk character by character tracking open delimiters
     stack: list[str] = []
     in_str    = False
     escape    = False
@@ -110,7 +112,6 @@ def _repair_json(raw: str) -> str:
     if in_str:
         raw += '"'
 
-    # Close any trailing incomplete key-value (ends with ": " or ": {")
     # Strip trailing comma before closing
     raw = re.sub(r",\s*$", "", raw.rstrip())
 
@@ -132,19 +133,24 @@ def _llm_call(
     user_prompt: str,
     max_tokens: int = 3500,
     label: str = "llm_call",
+    use_enhanced: bool = False,
 ) -> dict | None:
     """
     Call the LLM and return parsed JSON, or None on failure.
+    use_enhanced=True routes to the enhanced model (Validation tab only).
     Stores raw response in session state when PDF_INTEL_DEBUG=1.
+    Model names are never included in debug keys visible in the UI.
     """
     client = _get_openai_client()
     if not client:
         _debug_store(label, "ERROR: no client (check OPENAI env vars)")
         return None
 
+    model = _deployment_enhanced() if use_enhanced else _deployment_standard()
+
     try:
         response = client.chat.completions.create(
-            model=_deployment(),
+            model=model,
             max_tokens=max_tokens,
             temperature=0.0,
             messages=[
@@ -153,6 +159,8 @@ def _llm_call(
             ],
         )
         raw = response.choices[0].message.content or ""
+        if not raw.strip().endswith("}"):
+            _debug_store(label + "_TRUNCATED", raw)
         _debug_store(label, raw)
 
         repaired = _repair_json(raw)
@@ -190,37 +198,33 @@ def extract_full_text_from_parsed(parsed: dict) -> str:
     return "\n\n".join(parts)
 
 
-def build_azure_di_field_index(sheet_cache: dict) -> dict[str, dict]:
+def _build_azure_di_index_from_parsed(parsed: dict) -> dict:
     """
-    Flatten all Azure DI fields from sheet_cache into a single lookup:
-        { field_name: { value, confidence, bounding_polygon, source_page,
-                        page_width, page_height } }
-    Used both to feed the LLM prompt (name→value map) and for exact bbox lookup.
+    Build azure_di_index directly from parse_pdf_with_azure() output.
+    This is ALL pages, not just visited ones.
     """
     index: dict[str, dict] = {}
-    for _sheet_name, sheet_data in sheet_cache.items():
-        for page_dict in sheet_data.get("data", []):
-            if not isinstance(page_dict, dict):
+    for page in parsed.get("pages", []):
+        for field in page.get("fields", []):
+            fname = (field.get("field_name") or "").strip()
+            if not fname:
                 continue
-            for field_name, field_info in page_dict.items():
-                if not isinstance(field_info, dict):
-                    continue
-                existing  = index.get(field_name)
-                new_conf  = float(field_info.get("confidence") or 0.0)
-                if existing is None or new_conf > float(existing.get("confidence") or 0.0):
-                    index[field_name] = {
-                        "value":            field_info.get("value", ""),
-                        "confidence":       new_conf,
-                        "bounding_polygon": field_info.get("bounding_polygon"),
-                        "source_page":      field_info.get("source_page", 1),
-                        "page_width":       field_info.get("page_width", 8.5),
-                        "page_height":      field_info.get("page_height", 11.0),
-                    }
+            existing = index.get(fname)
+            new_conf = float(field.get("confidence", 0.0))
+            if existing is None or new_conf > float(existing.get("confidence", 0.0)):
+                index[fname] = {
+                    "value":            field.get("value", ""),
+                    "confidence":       new_conf,
+                    "bounding_polygon": field.get("bounding_polygon"),
+                    "source_page":      field.get("source_page", page.get("page_num", 1)),
+                    "page_width":       field.get("page_width",  8.5),
+                    "page_height":      field.get("page_height", 11.0),
+                }
     return index
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 2 — CLASSIFICATION  (unchanged, short call)
+# STEP 2 — CLASSIFICATION  (standard model)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _CLASSIFICATION_SYSTEM = textwrap.dedent("""
@@ -247,6 +251,7 @@ def classify_document(full_text: str) -> dict:
         user_prompt=f"Classify this document:\n\n{full_text[:3000]}",
         max_tokens=400,
         label="classify",
+        use_enhanced=False,
     )
     if not result:
         return {
@@ -259,7 +264,7 @@ def classify_document(full_text: str) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3a — ENTITIES + SIGNALS  (Call A — the big call)
+# STEP 3a — ENTITIES + SIGNALS  (standard model — Call A)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _ENTITIES_SCHEMA = """
@@ -311,6 +316,41 @@ Return ONLY valid JSON — no markdown, no preamble.
     "signal_validation":        "<are signals credible?>",
     "data_quality":             "<what is well-extracted vs missing>",
     "recommendations":          "<what a claims handler should do next>"
+  }
+}
+"""
+
+# ── Validation schema — used by the Validation tab (enhanced model) ───────────
+_VALIDATION_SCHEMA = """
+Return ONLY valid JSON — no markdown, no preamble.
+
+{
+  "extraction_accuracy": {
+    "score": <0–100>,
+    "verdict": "<Pass|Fail|Review>",
+    "findings": "<detailed assessment of extraction quality>",
+    "missed_fields": ["<field>"],
+    "incorrect_fields": [{"field": "<name>", "extracted": "<val>", "expected": "<val>"}]
+  },
+  "signal_credibility": {
+    "score": <0–100>,
+    "verdict": "<Credible|Questionable|Unsupported>",
+    "findings": "<are detected signals supported by document evidence>",
+    "false_positives": ["<signal description>"],
+    "missed_signals": ["<signal description>"]
+  },
+  "coverage_analysis": {
+    "score": <0–100>,
+    "verdict": "<Adequate|Gaps Identified|Critical Gaps>",
+    "findings": "<coverage completeness and any concerns>",
+    "gaps": ["<gap description>"]
+  },
+  "overall_validation": {
+    "score": <0–100>,
+    "verdict": "<Validated|Needs Review|Failed>",
+    "confidence": <0.0–1.0>,
+    "summary": "<2-3 sentence overall assessment>",
+    "recommended_actions": ["<action>"]
   }
 }
 """
@@ -432,8 +472,33 @@ For type_specific, extract ONLY these assessment fields (skip any not present):
 """).strip()
 
 
+def _validation_system(doc_type: str) -> str:
+    """System prompt for the Validation tab — uses enhanced model."""
+    entity_fields, signal_types = _DOC_TYPE_ENTITIES.get(
+        doc_type, _DOC_TYPE_ENTITIES["Legal"]
+    )
+    role = _DOC_TYPE_ROLES.get(doc_type, "insurance document analyst")
+    return textwrap.dedent(f"""
+You are a senior {role} performing rigorous quality validation of AI-extracted insurance document data.
+
+Your task is to critically evaluate:
+1. EXTRACTION ACCURACY — were the right fields extracted with correct values?
+2. SIGNAL CREDIBILITY — are the detected risk signals supported by the document?
+3. COVERAGE ANALYSIS — are there gaps, omissions, or coverage concerns missed?
+4. OVERALL VALIDATION — holistic assessment with recommended actions.
+
+Expected fields for a {doc_type} document: {entity_fields}
+Expected signal types: {signal_types}
+
+Be precise, critical, and actionable. Identify specific errors by field name.
+Score each dimension 0-100 (100 = perfect).
+
+{_VALIDATION_SCHEMA}
+""").strip()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3 — TWO-CALL ANALYSIS
+# STEP 3 — TWO-CALL ANALYSIS  (standard model)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def analyse_document(
@@ -442,7 +507,7 @@ def analyse_document(
     azure_di_fields: dict[str, dict] | None = None,
 ) -> dict:
     """
-    Two-call analysis to avoid token-limit truncation:
+    Two-call analysis using the standard model to avoid token-limit truncation:
       Call A: entities + signals  (larger, needs more tokens)
       Call B: summary + type_specific + judge  (smaller)
     """
@@ -452,11 +517,10 @@ def analyse_document(
         for fname, fdata in azure_di_fields.items():
             v = fdata.get("value", "")
             if v:
-                adi_kv[fname] = str(v)[:200]   # cap long values
+                adi_kv[fname] = str(v)[:200]
 
-    # Truncate text; keep more than before since we split the load
-    text_a = full_text[:5000]
-    if len(full_text) > 5000:
+    text_a = full_text[:3000]
+    if len(full_text) > 3000:
         text_a += "\n\n[... document truncated ...]"
 
     text_b = full_text[:3000]
@@ -466,7 +530,7 @@ def analyse_document(
     # Azure DI field listing for prompt
     adi_listing = ""
     if adi_kv:
-        lines = [f'  "{k}": "{v}"' for k, v in list(adi_kv.items())[:100]]
+        lines = [f'  "{k}": "{v[:50]}"' for k, v in list(adi_kv.items())[:30]]
         adi_listing = (
             "\n\n--- AZURE DOCUMENT INTELLIGENCE FIELDS (use exact key names as azure_di_key) ---\n{\n"
             + ",\n".join(lines)
@@ -483,9 +547,21 @@ def analyse_document(
     result_a = _llm_call(
         system_prompt=_entities_system(doc_type),
         user_prompt=user_a,
-        max_tokens=3500,
+        max_tokens=2500,
         label="entities_signals",
+        use_enhanced=False,
     )
+    if result_a is None:
+        import streamlit as st
+        st.write("⚠️ Retrying with reduced input...")
+        reduced_user_a = user_a[:int(len(user_a) * 0.6)]
+        result_a = _llm_call(
+            system_prompt=_entities_system(doc_type),
+            user_prompt=reduced_user_a,
+            max_tokens=2500,
+            label="entities_signals_retry",
+            use_enhanced=False,
+        )
 
     # ── Call B: summary + type_specific + judge ───────────────────────────────
     user_b = (
@@ -499,6 +575,7 @@ def analyse_document(
         user_prompt=user_b,
         max_tokens=1200,
         label="summary_judge",
+        use_enhanced=False,
     )
 
     # ── Merge results ──────────────────────────────────────────────────────────
@@ -511,7 +588,6 @@ def analyse_document(
     if result_a:
         entities = result_a.get("entities") or {}
         signals  = result_a.get("signals")  or []
-        # Ensure azure_di_key present on every entity
         for _, ed in entities.items():
             if isinstance(ed, dict):
                 ed.setdefault("azure_di_key", None)
@@ -554,6 +630,91 @@ def _empty_analysis(doc_type: str) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# VALIDATION PIPELINE  (enhanced model — called on demand from UI)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def run_validation(
+    full_text: str,
+    doc_type: str,
+    extracted_entities: dict,
+    detected_signals: list,
+    azure_di_fields: dict | None = None,
+) -> dict:
+    """
+    Run deep validation of extracted data using the enhanced model.
+    Called on demand from the Validation tab — NOT part of the main pipeline.
+    Returns a structured validation report dict.
+    """
+    # Summarise extracted data for the prompt
+    entity_summary = json.dumps(
+        {k: v.get("value", "") for k, v in extracted_entities.items() if isinstance(v, dict)},
+        indent=2,
+    )[:2000]
+
+    signal_summary = json.dumps(
+        [{"type": s.get("type"), "severity": s.get("severity_level"),
+          "description": s.get("description", "")[:100]} for s in detected_signals],
+        indent=2,
+    )[:800]
+
+    adi_summary = ""
+    if azure_di_fields:
+        lines = [f'  "{k}": "{str(v.get("value",""))[:60]}"'
+                 for k, v in list(azure_di_fields.items())[:25]]
+        adi_summary = "\n\nAZURE DI FIELDS:\n{\n" + ",\n".join(lines) + "\n}"
+
+    user_prompt = (
+        f"Document type: {doc_type}\n\n"
+        f"EXTRACTED ENTITIES:\n{entity_summary}\n\n"
+        f"DETECTED SIGNALS:\n{signal_summary}"
+        f"{adi_summary}\n\n"
+        f"--- DOCUMENT TEXT (truncated) ---\n{full_text[:2500]}"
+    )
+
+    result = _llm_call(
+        system_prompt=_validation_system(doc_type),
+        user_prompt=user_prompt,
+        max_tokens=2000,
+        label="validation",
+        use_enhanced=True,
+    )
+
+    if not result:
+        return _empty_validation()
+
+    # Ensure all keys present
+    result.setdefault("extraction_accuracy", _empty_validation_section("Review"))
+    result.setdefault("signal_credibility",  _empty_validation_section("Review"))
+    result.setdefault("coverage_analysis",   _empty_validation_section("Review"))
+    result.setdefault("overall_validation",  _empty_validation_section("Review"))
+
+    return result
+
+
+def _empty_validation_section(verdict: str = "Review") -> dict:
+    return {
+        "score": 0,
+        "verdict": verdict,
+        "findings": "Validation unavailable.",
+    }
+
+
+def _empty_validation() -> dict:
+    return {
+        "extraction_accuracy": _empty_validation_section(),
+        "signal_credibility":  _empty_validation_section(),
+        "coverage_analysis":   _empty_validation_section(),
+        "overall_validation": {
+            "score": 0,
+            "verdict": "Failed",
+            "confidence": 0.0,
+            "summary": "Validation could not be completed — enhanced AI unavailable.",
+            "recommended_actions": ["Check OPENAI environment variables and retry."],
+        },
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MASTER PIPELINE
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -579,16 +740,14 @@ def run_pdf_intelligence(parsed: dict, sheet_cache: dict | None = None) -> dict:
     full_text  = extract_full_text_from_parsed(parsed)
     page_count = len(parsed.get("pages", []))
 
-    # Build Azure DI index once
-    azure_di_index: dict[str, dict] = {}
-    if sheet_cache:
-        azure_di_index = build_azure_di_field_index(sheet_cache)
+    # Build Azure DI index once from all pages
+    azure_di_index = _build_azure_di_index_from_parsed(parsed)
 
-    # Classification (short, cheap)
+    # Classification (short, cheap — standard model)
     classification = classify_document(full_text)
     doc_type       = classification.get("classification", "Legal")
 
-    # Two-call analysis
+    # Two-call analysis (standard model)
     analysis = analyse_document(full_text, doc_type, azure_di_fields=azure_di_index)
 
     return {
@@ -598,7 +757,4 @@ def run_pdf_intelligence(parsed: dict, sheet_cache: dict | None = None) -> dict:
         "page_count":     page_count,
         "doc_type":       doc_type,
         "azure_di_index": azure_di_index,
-
     }
-
-    

@@ -47,15 +47,9 @@ from dotenv import load_dotenv
 # AZURE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _get_di_client():
-    try:
-        import streamlit as st
-        s = st.secrets
-    except Exception:
-        s = os.environ
-
-    endpoint = s.get("AZURE_DI_ENDPOINT", "")
-    key      = s.get("AZURE_DI_KEY", "")
+def _get_di_client() -> DocumentAnalysisClient:
+    endpoint = os.environ.get("AZURE_DI_ENDPOINT", "")
+    key      = os.environ.get("AZURE_DI_KEY", "")
     if not endpoint.startswith("https://"):
         raise ValueError(f"Invalid Azure endpoint: '{endpoint}'. Must start with https://")
     return DocumentAnalysisClient(

@@ -20,13 +20,13 @@ def render_sheet_card(
     sheet_dup_info: dict,
     title_kvs: dict | None = None,
 ) -> None:
-    totals_cls    = "hi" if totals_data else "mid"
-    totals_found  = "Found" if totals_data else "None"
-    type_cls      = "unk" if sheet_type == "UNKNOWN" else ""
+    totals_cls   = "hi" if totals_data else "mid"
+    totals_found = "Found" if totals_data else "None"
+    type_cls     = "unk" if sheet_type == "UNKNOWN" else ""
 
     cache_badge = (
-        "<span style='font-size:9px;color:#34d399;font-family:monospace;"
-        "margin-left:6px;'>&#9889; from cache</span>"
+        "<span style='font-size:9px;color:#0a9e6a;font-family:monospace;"
+        "font-weight:600;margin-left:6px;'>&#9889; from cache</span>"
         if from_cache else ""
     )
 
@@ -67,7 +67,6 @@ def render_sheet_card(
           "</div>"
         "</div>"
     )
-
     st.markdown(html, unsafe_allow_html=True)
 
     # ── Title metadata KV card ────────────────────────────────────────────────
@@ -75,13 +74,14 @@ def render_sheet_card(
         skip_keys = {"Sheet Name"}
         display_kvs = {k: v for k, v in title_kvs.items() if k not in skip_keys}
         if display_kvs:
-            pills = "".join(
-                f"<div style='display:flex;gap:6px;align-items:baseline;"
-                f"padding:5px 0;border-bottom:1px solid #1e1e32;'>"
-                f"<span style='font-size:10px;color:#6b7280;font-family:monospace;"
-                f"text-transform:uppercase;letter-spacing:1px;min-width:140px;flex-shrink:0;'>"
-                f"{k}</span>"
-                f"<span style='font-size:12px;color:#e8e7ff;font-family:monospace;'>"
+            rows_html = "".join(
+                f"<div style='display:flex;gap:10px;align-items:baseline;"
+                f"padding:6px 0;border-bottom:1px solid #e8ecf4;'>"
+                f"<span style='font-size:10px;font-weight:800;color:#4a5578;"
+                f"font-family:monospace;text-transform:uppercase;letter-spacing:1.2px;"
+                f"min-width:150px;flex-shrink:0;'>{k}</span>"
+                f"<span style='font-size:13px;color:#0f1117;font-family:monospace;"
+                f"font-weight:500;'>"
                 f"{v.get('value', '') if isinstance(v, dict) else str(v)}"
                 f"</span></div>"
                 for k, v in display_kvs.items()

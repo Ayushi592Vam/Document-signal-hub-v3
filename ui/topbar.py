@@ -1,5 +1,11 @@
-
-
+"""
+ui/topbar.py — light-theme version
+Top navigation bar:
+  LEFT   → ValueMomentum logo (Signal Hub icon)
+  CENTER → "Document Signal Hub" title + subtitle + schema badge
+  RIGHT  → ValueMomentum badge logo
+  FAR-R  → cache 🗑 + settings ⚙ buttons
+"""
 
 import streamlit as st
 from modules.logo import logo_img_tag, LOGO_B64, LOGO_MIME, BADGE_LOGO_B64, BADGE_LOGO_MIME
@@ -8,28 +14,15 @@ from modules.logo import logo_img_tag, LOGO_B64, LOGO_MIME, BADGE_LOGO_B64, BADG
 # ── Signal Hub right-side badge ───────────────────────────────────────────────
 
 def _signal_hub_badge_html() -> str:
-    """Right badge — ValueMomentum logo."""
+    """Right badge — bare ValueMomentum logo, no box."""
     if BADGE_LOGO_B64:
         mime = BADGE_LOGO_MIME or "image/png"
         return (
-            f'<div style="'
-            f'display:flex;align-items:center;'
-            f'background:linear-gradient(135deg,#0d0d1a 0%,#12122a 100%);'
-            f'border:1px solid #2a2a45;border-radius:10px;'
-            f'padding:6px 12px;white-space:nowrap;flex-shrink:0;">'
             f'<img src="data:{mime};base64,{BADGE_LOGO_B64}" '
             f'style="height:44px;width:auto;display:inline-block;'
-            f'vertical-align:middle;" />'
-            f'</div>'
+            f'vertical-align:middle;flex-shrink:0;" />'
         )
-    return (
-        '<div style="display:flex;align-items:center;'
-        'background:linear-gradient(135deg,#0d0d1a 0%,#12122a 100%);'
-        'border:1px solid #2a2a45;border-radius:10px;'
-        'padding:8px 16px;white-space:nowrap;flex-shrink:0;">'
-        '<span style="font-size:20px;">🛡️</span>'
-        '</div>'
-    )
+    return '<span style="font-size:20px;vertical-align:middle;"></span>'
 
 
 def _schema_badge_html(active_schema: str | None, schemas: dict) -> str:
@@ -53,17 +46,15 @@ def render_topbar(schemas: dict, config_load_status: dict) -> bool:
     Renders the top bar.
     Returns True if the settings gear was clicked (caller should open dialog).
     """
-    active_schema   = st.session_state.get("active_schema", None)
-    _vm_logo        = logo_img_tag(height=48)
-    _schema_badge   = _schema_badge_html(active_schema, schemas)
-    _sh_badge       = _signal_hub_badge_html()
+    active_schema = st.session_state.get("active_schema", None)
+    _vm_logo      = logo_img_tag(height=48)
+    _schema_badge = _schema_badge_html(active_schema, schemas)
+    _sh_badge     = _signal_hub_badge_html()
 
-    # Layout: [title area — wide] [cache btn] [gear btn]
     col_title, col_cache, col_gear = st.columns([10, 1, 1])
 
     with col_title:
         st.markdown(
-            # ── Outer flex row: logo | title+sub | schema | flex-spacer | SH badge
             '<div style="'
             'display:flex;align-items:center;'
             'padding:8px 0 6px 0;min-height:60px;gap:0;'
@@ -72,28 +63,28 @@ def render_topbar(schemas: dict, config_load_status: dict) -> bool:
             # VM logo — left anchor
             + _vm_logo +
 
-            # Title + subtitle block
+            # Title + subtitle
             '<div style="'
             'display:flex;flex-direction:column;'
             'justify-content:center;gap:2px;'
-            'margin-left:4px;'
+            'margin-left:8px;'
             '">'
             '<span style="'
-            'font-size:17px;font-weight:700;color:#ffffff;'
+            'font-size:17px;font-weight:700;color:#0f1117;'
             'font-family:\'Segoe UI\',\'Helvetica Neue\',Arial,sans-serif;'
             'letter-spacing:-0.3px;line-height:1.2;white-space:nowrap;'
-            '">&#128737;&nbsp; Document Signal Hub</span>'
+            '">&nbsp;&nbsp;&nbsp;Document Signal Hub</span>'
             '<span style="'
-            'font-size:11px;font-weight:400;color:#8888bb;'
+            'font-size:11px;font-weight:400;color:#0f1117;'
             'font-family:\'JetBrains Mono\',\'Cascadia Code\',\'Consolas\',monospace;'
-            'letter-spacing:0.4px;white-space:nowrap;'
-            '">Automated Claims Data Ingestion &amp; Multi-Schema Export Platform</span>'
+            'letter-spacing:0.5px;white-space:nowrap;'
+            '"> &nbsp;  Automated Claims Data Ingestion &amp; Multi-Schema Export Platform</span>'
             '</div>'
 
-            # Schema badge (only when a schema is active)
+            # Schema badge
             + (_schema_badge if _schema_badge else '') +
 
-            # Flex spacer — pushes the SH badge to the far right
+            # Flex spacer
             '<div style="flex:1;min-width:16px;"></div>'
 
             # Signal Hub badge — right anchor
@@ -121,18 +112,18 @@ def render_topbar(schemas: dict, config_load_status: dict) -> bool:
         )
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ── Cache clear confirmation — inline, no dialog ──────────────────────────
+    # ── Cache clear confirmation ──────────────────────────────────────────────
     if cache_clicked:
         st.session_state["_show_cache_confirm"] = True
 
     if st.session_state.get("_show_cache_confirm"):
         st.markdown(
-            "<div style='background:#1a1a2e;border:1px solid #2a2a45;"
-            "border-left:3px solid #f87171;border-radius:8px;"
+            "<div style='background:#fff8f0;border:1px solid #e8c4a0;"
+            "border-left:3px solid #d64040;border-radius:8px;"
             "padding:14px 18px;margin:6px 0 10px 0;'>"
-            "<div style='font-size:14px;font-weight:700;color:#f0efff;"
+            "<div style='font-size:14px;font-weight:700;color:#0f1117;"
             "margin-bottom:6px;'>Clear Caches</div>"
-            "<div style='font-size:13px;color:#a0a0c8;margin-bottom:14px;'>"
+            "<div style='font-size:13px;color:#4a5578;margin-bottom:14px;'>"
             "This will clear parsed sheet data, file duplicate memory, "
             "claim duplicate history, and UI session state.</div>"
             "</div>",
@@ -186,7 +177,7 @@ def render_topbar(schemas: dict, config_load_status: dict) -> bool:
                 st.rerun()
 
     st.markdown(
-        '<hr style="border:none;border-top:1px solid #2a2a45;margin:2px 0 18px 0;">',
+        '<hr style="border:none;border-top:1px solid #d0d6e8;margin:2px 0 18px 0;">',
         unsafe_allow_html=True,
     )
     return clicked

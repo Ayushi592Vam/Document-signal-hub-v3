@@ -26,10 +26,13 @@ def render_file_card(
     badge_cls   = "badge-duplicate" if is_dup else "badge-unique"
     badge_lbl   = "DUPLICATE" if is_dup else "UNIQUE"
     n_dup_sheets = sum(1 for v in sheet_dup_info.values() if v is not None)
+
     dup_note = (
-        "<span style='font-size:11px;color:#f5c842;font-family:var(--mono);'>⚠ Already processed</span>"
+        "<span style='font-size:11px;color:#c99a00;font-weight:700;"
+        "font-family:var(--mono);'>⚠ Already processed</span>"
         if is_dup
-        else "<span style='font-size:11px;color:#34d399;font-family:var(--mono);'>✓ New file ingested</span>"
+        else "<span style='font-size:11px;color:#0a9e6a;font-weight:700;"
+        "font-family:var(--mono);'>✓ New file ingested</span>"
     )
 
     def _sheet_pill(sn: str) -> str:
@@ -40,14 +43,29 @@ def render_file_card(
                 f"(sheet: {info['sheet_name']}) on {info['first_seen'][:10]}"
             )
             return (
-                f"<span class='sheet-pill-sm' title='{title}' "
-                f"style='border-color:#f5c842;color:#f5c842;'>⚠ {sn}</span>"
+                f"<span style='"
+                f"display:inline-block;"
+                f"background:#fffbeb;border:1px solid #c99a00;"
+                f"border-radius:5px;padding:4px 12px;"
+                f"font-family:var(--mono);font-size:12px;"
+                f"color:#c99a00;font-weight:600;"
+                f"margin:3px 5px 3px 0;cursor:default;"
+                f"' title='{title}'>⚠ {sn}</span>"
             )
-        return f"<span class='sheet-pill-sm'>{sn}</span>"
+        return (
+            f"<span style='"
+            f"display:inline-block;"
+            f"background:#f1f3f8;border:1px solid #d0d6e8;"
+            f"border-radius:5px;padding:4px 12px;"
+            f"font-family:var(--mono);font-size:12px;"
+            f"color:#0f1117;font-weight:600;"
+            f"margin:3px 5px 3px 0;"
+            f"'>{sn}</span>"
+        )
 
     sheet_pills        = "".join(_sheet_pill(sn) for sn in sheet_names)
     _file_status_color = (
-        "#f5c842" if is_dup else ("#f5c842" if n_dup_sheets > 0 else "#34d399")
+        "#c99a00" if is_dup else ("#c99a00" if n_dup_sheets > 0 else "#0a9e6a")
     )
     _file_status_text  = (
         "Duplicate" if is_dup else (f"{n_dup_sheets} sheet(s) duplicate" if n_dup_sheets > 0 else "New")
@@ -77,12 +95,22 @@ def render_file_card(
             </div>
             <div class="file-stat">
               <div class="file-stat-lbl">Status</div>
-              <div class="file-stat-val" style="color:{_file_status_color};">{_file_status_text}</div>
+              <div class="file-stat-val" style="color:{_file_status_color};font-weight:700;">{_file_status_text}</div>
             </div>
           </div>
-          <div class="file-card-sheets">
-            <div class="section-lbl">Worksheets</div>
-            {sheet_pills}
+          <div style="
+            padding:12px 20px 14px 20px;
+            border-top:1px solid var(--b0);
+            background:var(--s0);
+          ">
+            <div style="
+              font-size:11px;font-weight:800;color:var(--t0);
+              text-transform:uppercase;letter-spacing:2px;
+              font-family:var(--mono);margin-bottom:8px;
+            ">Worksheets</div>
+            <div style="display:flex;flex-wrap:wrap;gap:0;">
+              {sheet_pills}
+            </div>
           </div>
         </div>
         """,

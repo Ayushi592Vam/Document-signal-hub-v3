@@ -1,1 +1,202 @@
-{}
+{
+  "CGL-001": {
+    "claim_id": "CGL-001",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224524",
+    "fields": {
+      "Claim Number": "CGL-001",
+      "Loss Date": "03/15/2021",
+      "Date Reported": "03/20/2021",
+      "Claimant Name": "John Martineze",
+      "Description of Loss": "LACERATION",
+      "Indemnity Paid": "12500.00",
+      "Medical Paid": "8200.00",
+      "Expense Paid": "3100.00",
+      "Total Paid": "23800.00",
+      "Reserve": "0.00",
+      "Total Incurred": "23800.00",
+      "Status": "CLOSED"
+    }
+  },
+  "CGL-002": {
+    "claim_id": "CGL-002",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224550",
+    "fields": {
+      "Claim Number": "CGL-002",
+      "Loss Date": "07/08/2021",
+      "Date Reported": "07/10/2021",
+      "Claimant Name": "Sarah Thompson",
+      "Description of Loss": "Property damage - contractor equipment",
+      "Indemnity Paid": "123400.00",
+      "Medical Paid": "0.00",
+      "Expense Paid": "1500.00",
+      "Total Paid": "124900.00",
+      "Reserve": "22000.00",
+      "Total Incurred": "146900.00",
+      "Status": "OPEN"
+    }
+  },
+  "CGL-003": {
+    "claim_id": "CGL-003",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224565",
+    "fields": {
+      "Claim Number": "CGL-003",
+      "Loss Date": "11/22/2021",
+      "Date Reported": "12/01/2021",
+      "Claimant Name": "Robert Chen",
+      "Description of Loss": "Bodily injury - falling debris",
+      "Indemnity Paid": "45000.00",
+      "Medical Paid": "18750.00",
+      "Expense Paid": "9200.00",
+      "Total Paid": "72950.00",
+      "Reserve": "0.00",
+      "Total Incurred": "72950.00",
+      "Status": "CLOSED"
+    }
+  },
+  "CGL-004": {
+    "claim_id": "CGL-004",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224577",
+    "fields": {
+      "Claim Number": "CGL-004",
+      "Loss Date": "02/14/2022",
+      "Date Reported": "02/18/2022",
+      "Claimant Name": "Linda Foster",
+      "Description of Loss": "Premises liability - parking lot",
+      "Indemnity Paid": "0.00",
+      "Medical Paid": "4300.00",
+      "Expense Paid": "2100.00",
+      "Total Paid": "6400.00",
+      "Reserve": "35000.00",
+      "Total Incurred": "41400.00",
+      "Status": "OPEN"
+    }
+  },
+  "CGL-005": {
+    "claim_id": "CGL-005",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224589",
+    "fields": {
+      "Claim Number": "CGL-005",
+      "Loss Date": "06/30/2022",
+      "Date Reported": "07/05/2022",
+      "Claimant Name": "Michael Wong",
+      "Description of Loss": "Products liability - defective material",
+      "Indemnity Paid": "28500.00",
+      "Medical Paid": "0.00",
+      "Expense Paid": "6750.00",
+      "Total Paid": "35250.00",
+      "Reserve": "0.00",
+      "Total Incurred": "35250.00",
+      "Status": "CLOSED"
+    }
+  },
+  "CGL-006": {
+    "claim_id": "CGL-006",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224600",
+    "fields": {
+      "Claim Number": "CGL-006",
+      "Loss Date": "09/11/2022",
+      "Date Reported": "09/14/2022",
+      "Claimant Name": "Patricia Adams",
+      "Description of Loss": "Bodily injury - scaffolding collapse",
+      "Indemnity Paid": "0.00",
+      "Medical Paid": "0.00",
+      "Expense Paid": "4200.00",
+      "Total Paid": "4200.00",
+      "Reserve": "125000.00",
+      "Total Incurred": "129200.00",
+      "Status": "OPEN"
+    }
+  },
+  "CGL-007": {
+    "claim_id": "CGL-007",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224610",
+    "fields": {
+      "Claim Number": "CGL-007",
+      "Loss Date": "01/20/2023",
+      "Date Reported": "01/25/2023",
+      "Claimant Name": "David Lee",
+      "Description of Loss": "Property damage - water intrusion",
+      "Indemnity Paid": "7800.00",
+      "Medical Paid": "0.00",
+      "Expense Paid": "1900.00",
+      "Total Paid": "9700.00",
+      "Reserve": "0.00",
+      "Total Incurred": "9700.00",
+      "Status": "CLOSED"
+    }
+  },
+  "CGL-008": {
+    "claim_id": "CGL-008",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224618",
+    "fields": {
+      "Claim Number": "CGL-008",
+      "Loss Date": "05/03/2023",
+      "Date Reported": "05/07/2023",
+      "Claimant Name": "Angela Rivera",
+      "Description of Loss": "Slip & fall - construction entrance",
+      "Indemnity Paid": "0.00",
+      "Medical Paid": "2100.00",
+      "Expense Paid": "800.00",
+      "Total Paid": "2900.00",
+      "Reserve": "18000.00",
+      "Total Incurred": "20900.00",
+      "Status": "OPEN"
+    }
+  },
+  "CGL-009": {
+    "claim_id": "CGL-009",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224626",
+    "fields": {
+      "Claim Number": "CGL-009",
+      "Loss Date": "08/17/2023",
+      "Date Reported": "08/20/2023",
+      "Claimant Name": "James Patel",
+      "Description of Loss": "Bodily injury - vehicle contact",
+      "Indemnity Paid": "15200.00",
+      "Medical Paid": "9400.00",
+      "Expense Paid": "3600.00",
+      "Total Paid": "28200.00",
+      "Reserve": "0.00",
+      "Total Incurred": "28200.00",
+      "Status": "CLOSED"
+    }
+  },
+  "CGL-010": {
+    "claim_id": "CGL-010",
+    "sheet_name": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "ingested_at": "2026-04-16T18:04:23.224634",
+    "fields": {
+      "Claim Number": "CGL-010",
+      "Loss Date": "11/05/2023",
+      "Date Reported": "11/09/2023",
+      "Claimant Name": "Nancy Scott",
+      "Description of Loss": "Property damage - third party",
+      "Indemnity Paid": "0.00",
+      "Medical Paid": "0.00",
+      "Expense Paid": "1200.00",
+      "Total Paid": "1200.00",
+      "Reserve": "9500.00",
+      "Total Incurred": "10700.00",
+      "Status": "OPEN"
+    }
+  }
+}
