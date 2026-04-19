@@ -30,6 +30,9 @@ FIXES in this version:
      the adjacent region as the bbox
   4. Multi-word split: tries each significant word and intersects results
   5. Colon-stripped variants: "FILING LOCATION:" → "FILING LOCATION" etc.
+  6. FIXED: parse_pdf_with_azure() and get_pdf_sheet_names() now catch all
+     Azure HttpResponseError / credential errors and return graceful fallbacks
+     instead of crashing the app.
 """
 
 from __future__ import annotations
@@ -343,15 +346,6 @@ def _search_page_for_text(page, text: str) -> list:
     """
     Try multiple text-search strategies on a PyMuPDF page.
     Returns a list of fitz.Rect matches, or [] if nothing found.
-
-    Strategies tried in order:
-      1. Exact original text
-      2. UPPER CASE variant
-      3. Title Case variant
-      4. lower case variant
-      5. Colon-stripped variant  ("FILING LOCATION:" → "FILING LOCATION")
-      6. First significant word only (for multi-word labels ≥ 5 chars)
-      7. Each word independently (for 2-word labels)
     """
     if not text or not text.strip():
         return []
@@ -366,12 +360,10 @@ def _search_page_for_text(page, text: str) -> list:
         text.upper().rstrip(":").strip(),
     ]
 
-    # Try removing common suffixes
     for suffix in (" DATE", " NUMBER", " LOCATION", " COURT", " AREA"):
         if text.upper().endswith(suffix):
             candidates.append(text[:-len(suffix)].strip())
 
-    # De-duplicate while preserving order
     seen_c: set = set()
     ordered: list[str] = []
     for c in candidates:
@@ -401,13 +393,7 @@ def _enrich_fields_with_pymupdf_polygons(
     For every field that still has bounding_polygon=None, use PyMuPDF to
     search for the key label (and optionally its value) on the page and
     compute a synthetic bounding polygon.
-
     Modifies fields in-place. No-op if pymupdf is not installed.
-
-    Search priority:
-      1. Key label search (multiple case variants)
-      2. Value text search (if key not found) — use value region as proxy
-      3. Combined key+value region if both found
     """
     try:
         import fitz
@@ -421,12 +407,8 @@ def _enrich_fields_with_pymupdf_polygons(
     try:
         doc  = fitz.open(pdf_path)
         page = doc[page_num - 1]
-        pw   = page.rect.width    # PDF points
+        pw   = page.rect.width
         ph   = page.rect.height
-
-        # Scale factors: inches → PDF points
-        scale_x = pw / page_width_inches  if page_width_inches  else 1.0
-        scale_y = ph / page_height_inches if page_height_inches else 1.0
 
         for field in fields_needing_bbox:
             key_text = (field.get("field_name") or "").strip()
@@ -435,22 +417,17 @@ def _enrich_fields_with_pymupdf_polygons(
             if not key_text:
                 continue
 
-            # ── Strategy 1: search for the key label ─────────────────────────
             key_rects = _search_page_for_text(page, key_text)
 
-            # ── Strategy 2: search for the value (proximity fallback) ─────────
             val_rects = []
             if val_text and len(val_text) <= 120:
                 val_rects = _search_page_for_text(page, val_text)
-
-                # If multiple value matches, pick the one closest to key
                 if val_rects and key_rects:
                     anchor_y = key_rects[0].y0
                     val_rects = [min(val_rects, key=lambda r: abs(r.y0 - anchor_y))]
                 elif val_rects:
                     val_rects = [val_rects[0]]
 
-            # ── Build merged bounding box ──────────────────────────────────────
             rects_to_merge = []
             if key_rects:
                 rects_to_merge.append(key_rects[0])
@@ -458,7 +435,6 @@ def _enrich_fields_with_pymupdf_polygons(
                 rects_to_merge.append(val_rects[0])
 
             if not rects_to_merge:
-                # ── Strategy 3: first significant word of label ───────────────
                 words = [w for w in key_text.split() if len(w) >= 4]
                 for word in words[:2]:
                     word_rects = _search_page_for_text(page, word)
@@ -467,14 +443,13 @@ def _enrich_fields_with_pymupdf_polygons(
                         break
 
             if not rects_to_merge:
-                continue  # Nothing found for this field — leave bbox as None
+                continue
 
             x0 = min(r.x0 for r in rects_to_merge)
             y0 = min(r.y0 for r in rects_to_merge)
             x1 = max(r.x1 for r in rects_to_merge)
             y1 = max(r.y1 for r in rects_to_merge)
 
-            # Convert PDF points → inches (consistent with Azure DI coord system)
             inv_sx = page_width_inches  / pw if pw else 1.0
             inv_sy = page_height_inches / ph if ph else 1.0
 
@@ -496,6 +471,37 @@ def _enrich_fields_with_pymupdf_polygons(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ERROR HELPER — store a friendly message in session state for the UI
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _store_azure_error(raw_msg: str) -> str:
+    """
+    Convert a raw Azure exception message into a user-friendly string,
+    store it in st.session_state["_azure_di_error"], and return it.
+    On Streamlit Cloud the real message is redacted — detect that and
+    show helpful troubleshooting text instead.
+    """
+    if not raw_msg.strip() or "redacted" in raw_msg.lower():
+        friendly = (
+            "Azure Document Intelligence returned an HTTP error "
+            "(details are redacted on Streamlit Cloud). "
+            "Common causes: invalid or expired API key, wrong endpoint URL, "
+            "resource quota exceeded, or network timeout. "
+            "Check AZURE_DI_ENDPOINT and AZURE_DI_KEY in your Streamlit secrets."
+        )
+    else:
+        friendly = f"Azure Document Intelligence error: {raw_msg}"
+
+    try:
+        import streamlit as st
+        st.session_state["_azure_di_error"] = friendly
+    except Exception:
+        pass
+
+    return friendly
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # MAIN PARSER
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -503,37 +509,31 @@ def parse_pdf_with_azure(file_path: str | Path) -> dict:
     """
     Parse uploaded PDF using Azure Document Intelligence prebuilt-document.
 
-    Returns:
-    {
-        "doc_type": "pdf_document",
-        "doc_label": "PDF Document",
-        "pages": [
-            {
-                "page_num": 1,
-                "page_label": "Page 1",
-                "raw_text": "...",
-                "fields": [
-                    {
-                        "field_name": "JUDGE",
-                        "value": "1ST CIRCUIT DIVISION 3",
-                        "confidence": 0.95,
-                        "source_page": 1,
-                        "bounding_polygon": [(x0,y0),(x1,y0),(x1,y1),(x0,y1)],
-                        "page_width": 8.5,
-                        "page_height": 11.0,
-                        ...
-                    }
-                ]
-            }
-        ]
-    }
+    Returns a dict with at minimum {"pages": [...], "doc_type": ..., "doc_label": ...}.
+    On Azure failure returns {"pages": [], "error": "<message>", ...} — NEVER raises.
+
+    The "error" key is also written to st.session_state["_azure_di_error"] so
+    app2.py can surface it as a banner without crashing.
     """
-    client    = _get_di_client()
     file_path = str(file_path)
 
-    with open(file_path, "rb") as f:
-        poller = client.begin_analyze_document("prebuilt-document", document=f)
+    # ── Build client — catch credential / config errors ───────────────────────
+    try:
+        client = _get_di_client()
+    except Exception as cfg_err:
+        err = _store_azure_error(str(cfg_err))
+        return {"pages": [], "doc_type": "pdf_document",
+                "doc_label": "PDF Document", "error": err}
+
+    # ── Call Azure DI — catch HttpResponseError and any other network error ───
+    try:
+        with open(file_path, "rb") as f:
+            poller = client.begin_analyze_document("prebuilt-document", document=f)
         result = poller.result()
+    except Exception as azure_err:
+        err = _store_azure_error(str(azure_err))
+        return {"pages": [], "doc_type": "pdf_document",
+                "doc_label": "PDF Document", "error": err}
 
     # ── Build page text map + dimension map ───────────────────────────────────
     page_text_map: dict[int, str]                  = {}
@@ -569,11 +569,9 @@ def parse_pdf_with_azure(file_path: str | Path) -> dict:
             fname_norm = re.sub(r"[\s:]+", " ", fname).strip()
 
             if fname not in existing_names:
-                # New field from Azure KV — add it
                 page_field_map[page_num].append(f)
                 existing_names.add(fname)
             else:
-                # Enrich existing text-extracted field with polygon + confidence
                 for existing in page_field_map[page_num]:
                     e_norm = re.sub(r"[\s:]+", " ",
                                     (existing.get("field_name", "") or "").strip().lower())
@@ -582,11 +580,9 @@ def parse_pdf_with_azure(file_path: str | Path) -> dict:
                         or e_norm in fname_norm
                         or fname_norm in e_norm
                     ):
-                        # Always update confidence from Azure KV (more reliable)
                         adi_conf = float(f.get("confidence", 0.0))
                         if adi_conf > 0:
                             existing["confidence"] = adi_conf
-                        # Update polygon only if we don't have one yet
                         if existing.get("bounding_polygon") is None and f.get("bounding_polygon"):
                             existing["bounding_polygon"] = f["bounding_polygon"]
                             existing["page_width"]       = f["page_width"]
@@ -634,8 +630,16 @@ def parse_pdf_with_azure(file_path: str | Path) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_pdf_sheet_names(file_path: str | Path) -> list[str]:
+    """
+    Return page labels for the PDF. Falls back to ["Page 1"] on any error —
+    never raises, so app2.py never crashes at the sheet-names call.
+    """
     parsed = parse_pdf_with_azure(file_path)
-    return [p["page_label"] for p in parsed.get("pages", [])]
+    # parse_pdf_with_azure already stored the error in session state if one occurred
+    pages = parsed.get("pages", [])
+    if not pages:
+        return ["Page 1"]
+    return [p["page_label"] for p in pages]
 
 
 def get_pdf_sheet_dimensions(

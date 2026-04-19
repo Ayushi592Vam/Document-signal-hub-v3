@@ -88,6 +88,36 @@ _PDF_INTELLIGENCE_TYPES = {"FNOL", "Legal", "Medical", "Loss Run"}
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Azure error banner helper
+# ════════════════════════════════════════════════════════════════════════════
+
+def _check_and_show_azure_error(stop_on_error: bool = True) -> bool:
+    """
+    Pop any Azure DI error stored by parse_pdf_with_azure() and show it as a
+    Streamlit error banner. Returns True if an error was shown.
+    If stop_on_error=True, calls st.stop() after showing the banner.
+    """
+    azure_err = st.session_state.pop("_azure_di_error", None)
+    if not azure_err:
+        return False
+
+    st.error(
+        f"**⚠️ Azure Document Intelligence Error**\n\n"
+        f"{azure_err}\n\n"
+        f"**Checklist:**\n"
+        f"- `AZURE_DI_ENDPOINT` is set to your Form Recognizer endpoint "
+        f"(e.g. `https://your-resource.cognitiveservices.azure.com/`)\n"
+        f"- `AZURE_DI_KEY` is a valid, non-expired key\n"
+        f"- The Azure resource has not exceeded its quota\n"
+        f"- The uploaded file is a valid, non-corrupted PDF\n\n"
+        f"Go to **Manage app → Secrets** on Streamlit Cloud to update credentials."
+    )
+    if stop_on_error:
+        st.stop()
+    return True
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Private helpers
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -170,9 +200,7 @@ def _parse_pdf(file_path: str):
     """
     Parse a PDF via Azure Document Intelligence.
     Returns (data, sheet_type, None, azure_result).
-
-    FIX: confidence is now stored per field so the bbox popup can display
-         the real Azure DI confidence score instead of always showing 0%.
+    Never raises — errors are stored in session state by parse_pdf_with_azure().
     """
     from modules.pdf_azure_parser import parse_pdf_with_azure
     result = parse_pdf_with_azure(file_path)
@@ -200,7 +228,7 @@ def _parse_pdf(file_path: str):
                 "bounding_polygon": f.get("bounding_polygon"),
                 "page_width":       f.get("page_width",  8.5),
                 "page_height":      f.get("page_height", 11.0),
-                "confidence":       float(f.get("confidence", 0.0)),  # Azure DI confidence
+                "confidence":       float(f.get("confidence", 0.0)),
                 "_pdf_raw":         True,
                 "source_block":     None,
                 "source_para":      None,
@@ -302,16 +330,22 @@ if st.session_state.get("last_uploaded") != _upload_fingerprint:
     st.session_state.last_uploaded = _upload_fingerprint
 
     if file_ext == ".pdf":
-         from modules.pdf_azure_parser import get_pdf_sheet_names
-         st.session_state.sheet_names = get_pdf_sheet_names(excel_path)
-         # Clear intelligence cache so it re-runs for the new file
-         st.session_state.pop("_pdf_intelligence", None)
-         st.session_state.pop("_pdf_intelligence_file", None)
-         st.session_state.pop("_pdf_parsed_raw", None)   # <-- ADD THIS LINE
-         # Clear all page-specific ADI lookup caches
-         for _k in list(st.session_state.keys()):
-             if _k.startswith("_adi_lookup"):
-                 st.session_state.pop(_k, None)
+        from modules.pdf_azure_parser import get_pdf_sheet_names
+        st.session_state.sheet_names = get_pdf_sheet_names(excel_path)
+
+        # ── Show Azure error banner and stop if the parse failed ──────────────
+        # parse_pdf_with_azure() stores the error in session state; we surface
+        # it here as a user-friendly banner rather than letting the app crash.
+        _check_and_show_azure_error(stop_on_error=True)
+
+        # Clear intelligence cache so it re-runs for the new file
+        st.session_state.pop("_pdf_intelligence", None)
+        st.session_state.pop("_pdf_intelligence_file", None)
+        st.session_state.pop("_pdf_parsed_raw", None)
+        # Clear all page-specific ADI lookup caches
+        for _k in list(st.session_state.keys()):
+            if _k.startswith("_adi_lookup"):
+                st.session_state.pop(_k, None)
     elif file_ext == ".docx":
         st.session_state.sheet_names = ["Document"]
     else:
@@ -451,14 +485,17 @@ if selected_sheet not in st.session_state.sheet_cache:
             if file_ext == ".pdf":
                 all_pages_data, sheet_type, _doc_type_enum, _azure_result = _parse_pdf(excel_path)
 
-                 # Store raw parsed result for page-wise entity display in pdf_analysis.py
+                # Show Azure error banner if parse failed (non-fatal — keep going
+                # with empty data so the rest of the UI doesn't crash)
+                _check_and_show_azure_error(stop_on_error=False)
+
+                # Store raw parsed result for page-wise entity display
                 st.session_state["_pdf_parsed_raw"] = _azure_result
 
                 try:
-                     selected_page_num = int(selected_sheet.replace("Page", "").strip())
+                    selected_page_num = int(selected_sheet.replace("Page", "").strip())
                 except Exception:
-                     selected_page_num = 1
-
+                    selected_page_num = 1
 
                 if 1 <= selected_page_num <= len(all_pages_data):
                     data = [all_pages_data[selected_page_num - 1]]
@@ -487,6 +524,8 @@ if selected_sheet not in st.session_state.sheet_cache:
                             from modules.pdf_intelligence import run_pdf_intelligence
                             from modules.pdf_azure_parser import parse_pdf_with_azure
                             _parsed_for_intel = parse_pdf_with_azure(excel_path)
+                            # Surface any Azure error from the intelligence parse too
+                            _check_and_show_azure_error(stop_on_error=False)
                             _intel = run_pdf_intelligence(_parsed_for_intel)
                             st.session_state[_intel_key]      = _intel
                             st.session_state[_intel_file_key] = excel_path
@@ -662,20 +701,15 @@ _from_cache  = active.get("_from_cache", False)
 
 
 # ── Ensure PDF intelligence runs even when sheet data loaded from cache ───────
-#
-# WHY: The intelligence pipeline only runs inside `if not _cached: → PDF branch`.
-# When the same PDF is re-uploaded and sheet data is already in the feature store,
-# the cache branch is taken and intelligence is never re-run, leaving
-# _pdf_intelligence empty → _pdf_doc_type="" → _use_intel_panel=False → Excel UI.
-#
-# This single guard runs ONCE per file (keyed on excel_path) regardless of
-# whether data came from cache or a fresh parse.
 if file_ext == ".pdf" and st.session_state.get("_pdf_intelligence_file") != excel_path:
     with st.spinner("🧠 Running AI document analysis…"):
         try:
             from modules.pdf_intelligence import run_pdf_intelligence
             from modules.pdf_azure_parser import parse_pdf_with_azure
             _parsed_for_intel = parse_pdf_with_azure(excel_path)
+            # Surface any Azure error non-fatally — intelligence panel will show
+            # the empty state rather than crashing
+            _check_and_show_azure_error(stop_on_error=False)
             _intel = run_pdf_intelligence(_parsed_for_intel)
             st.session_state["_pdf_intelligence"]      = _intel
             st.session_state["_pdf_intelligence_file"] = excel_path
