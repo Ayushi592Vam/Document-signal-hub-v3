@@ -7,3 +7,4 @@ azure-ai-formrecognizer
 python-docx
 docx2txt
 pymupdf
+openai

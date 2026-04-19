@@ -1960,18 +1960,35 @@ def render_pdf_analysis_panel(
     meta     = _DOC_TYPE_META.get(doc_type, _DOC_TYPE_META["Legal"])
 
     # ── Invalidate ALL per-file caches when a new file is uploaded ────────────
-    _prev_file = st.session_state.get("_pdf_analysis_current_file")
-    if _prev_file != uploaded_name:
-        # New file detected — clear everything that belongs to the previous file
+    # Use a fingerprint of the intelligence object itself, not just the filename.
+    # This guarantees a cache clear even if the same filename is re-uploaded with
+    # different content, or if the filename hasn't changed but the PDF has.
+    _intel_fp = (
+        uploaded_name
+        + "|" + str(intelligence.get("page_count", 0))
+        + "|" + str(intelligence.get("doc_type", ""))
+        + "|" + str(len(intelligence.get("full_text", "")))
+        # Include first 80 chars of full_text so same-name/same-size but
+        # different-content files are still detected as distinct.
+        + "|" + intelligence.get("full_text", "")[:80]
+    )
+    _prev_fp = st.session_state.get("_pdf_analysis_intel_fp")
+    if _prev_fp != _intel_fp:
+        # New file (or new intelligence run) detected — wipe all stale state
         for _stale_key in (
             "_adi_lookup",
             "_adi_lookup_file",
-            "_pdf_validation_result",   # ← fixes validation bleed-over between files
+            "_pdf_analysis_current_file",
+            "_pdf_validation_result",   # ← clears AI Assistant / Validation tab
             "_pdf_summary_override",
             "_pdf_intel_debug",
+            "_pdf_edits",
+            "_pdf_edit_hist",
+            "_pdf_edit_mode_fields",
         ):
             st.session_state.pop(_stale_key, None)
-        st.session_state["_pdf_analysis_current_file"] = uploaded_name
+        st.session_state["_pdf_analysis_intel_fp"]      = _intel_fp
+        st.session_state["_pdf_analysis_current_file"]  = uploaded_name
 
     # Resolve PDF path
     _tmpdir  = st.session_state.get("tmpdir", "")

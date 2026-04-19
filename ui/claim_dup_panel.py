@@ -64,19 +64,17 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
         unsafe_allow_html=True,
     )
 
-    # ── Clear button — top, visible always ────────────────────────────────
+    # ── Clear button ───────────────────────────────────────────────────────
     if st.button(
         "🗑  Clear duplicate history for this claim",
         key=f"clear_dup_{claim_id}",
         help="Remove this claim from the duplicate store so it won't be flagged next time",
     ):
-        # Remove from persistent store
         store = _load_claim_dup_store()
         if claim_id in store:
             del store[claim_id]
             _save_claim_dup_store(store)
 
-        # Remove from session state so banner disappears immediately
         _dup_key = f"_claim_dup_results_{selected_sheet}"
         if _dup_key in st.session_state:
             results_in_state = st.session_state[_dup_key]
@@ -102,11 +100,14 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
     if not st.session_state[_diff_key]:
         return
 
-    # ── Before / After diff table ──────────────────────────────────────────
+    # ── Before / After diff table header ──────────────────────────────────
     st.markdown(
         "<div style='display:grid;grid-template-columns:1.8fr 2fr 2fr;"
-        "gap:8px;padding:6px 10px;background:#f1f5f9;border-radius:6px 6px 0 0;"
-        "border:1px solid #cbd5e1;margin-top:6px;'>"
+        "gap:8px;padding:8px 12px;"
+        "background:#f1f5f9;"           # light slate header
+        "border-radius:6px 6px 0 0;"
+        "border:1px solid #cbd5e1;"
+        "margin-top:8px;'>"
         "<div style='font-size:11px;font-weight:700;color:#000000;"
         "text-transform:uppercase;letter-spacing:1.2px;font-family:monospace;'>Field</div>"
         "<div style='font-size:11px;font-weight:700;color:#b91c1c;"
@@ -117,6 +118,7 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
         unsafe_allow_html=True,
     )
 
+    # ── Rows ───────────────────────────────────────────────────────────────
     for idx, (field, diff) in enumerate(changes.items()):
         before_val = diff.get("before", "") or "(empty)"
         after_val  = diff.get("after",  "") or "(empty)"
@@ -124,15 +126,18 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
 
         st.markdown(
             f"<div style='display:grid;grid-template-columns:1.8fr 2fr 2fr;"
-            f"gap:8px;padding:8px 10px;background:{row_bg};"
+            f"gap:8px;padding:8px 12px;background:{row_bg};"
             f"border-left:1px solid #cbd5e1;border-right:1px solid #cbd5e1;"
             f"border-bottom:1px solid #cbd5e1;'>"
-            f"<div style='font-size:12px;font-weight:600;color:#000000;"
+            # field name
+            f"<div style='font-size:12px;font-weight:700;color:#000000;"
             f"font-family:monospace;text-transform:uppercase;letter-spacing:0.5px;"
             f"display:flex;align-items:center;'>{field}</div>"
+            # before
             f"<div style='font-size:12px;color:#b91c1c;font-family:monospace;"
             f"background:#fef2f2;border:1px solid #fecaca;"
             f"border-radius:4px;padding:4px 8px;word-break:break-all;'>{before_val}</div>"
+            # after
             f"<div style='font-size:12px;color:#15803d;font-family:monospace;"
             f"background:#f0fdf4;border:1px solid #bbf7d0;"
             f"border-radius:4px;padding:4px 8px;word-break:break-all;'>{after_val}</div>"
@@ -140,7 +145,7 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
             unsafe_allow_html=True,
         )
 
-    # Bottom border
+    # ── Bottom border ──────────────────────────────────────────────────────
     st.markdown(
         "<div style='height:4px;background:#f1f5f9;border-radius:0 0 6px 6px;"
         "border:1px solid #cbd5e1;border-top:none;margin-bottom:12px;'></div>",
@@ -154,7 +159,8 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
             if f not in changes and new_fields.get(f)
         ]
         pills = "".join(
-            f"<span style='display:inline-block;background:#f8fafc;"
+            f"<span style='display:inline-block;"
+            f"background:#f1f5f9;"          # light grey pill
             f"border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;"
             f"font-size:11px;color:#000000;margin:2px 3px;"
             f"font-family:monospace;'>{f}</span>"

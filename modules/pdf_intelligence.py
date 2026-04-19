@@ -22,6 +22,9 @@ Fixes:
   • entities prompt asks for azure_di_key so UI can do exact bbox lookup.
   • Model routing: standard model for main analysis; enhanced model for validation.
     Model names are never exposed in the UI.
+  • FIXED: removed st.write() from module-level code (caused silent crash in
+    cloud deployments, resulting in empty entities). All retry logging now goes
+    to _debug_store() only.
 """
 
 from __future__ import annotations
@@ -510,6 +513,9 @@ def analyse_document(
     Two-call analysis using the standard model to avoid token-limit truncation:
       Call A: entities + signals  (larger, needs more tokens)
       Call B: summary + type_specific + judge  (smaller)
+
+    NOTE: No st.write() or any Streamlit calls here — this is a pure module.
+    All logging goes through _debug_store() only.
     """
     # Build compact name→value map for the LLM prompt (no bbox data)
     adi_kv: dict[str, str] = {}
@@ -551,9 +557,10 @@ def analyse_document(
         label="entities_signals",
         use_enhanced=False,
     )
+
+    # ── Retry with reduced input if Call A failed (silent — no st.write) ──────
     if result_a is None:
-        import streamlit as st
-        st.write("⚠️ Retrying with reduced input...")
+        _debug_store("entities_signals_retry_triggered", "Call A returned None — retrying with reduced input")
         reduced_user_a = user_a[:int(len(user_a) * 0.6)]
         result_a = _llm_call(
             system_prompt=_entities_system(doc_type),
