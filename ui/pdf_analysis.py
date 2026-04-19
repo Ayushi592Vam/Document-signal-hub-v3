@@ -946,6 +946,141 @@ def _render_entities_tab(
     if _bbox_pending_name and _bbox_pending_info is not None:
         _bbox_popup(_bbox_pending_name, _bbox_pending_info, pdf_path or "")
 
+    # ── Add New Field ─────────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top:20px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='height:1px;background:linear-gradient(90deg,{_BORDER2},{_BG});"
+        f"margin-bottom:16px;'></div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        _section_header("Add New Field", "manually inject a custom key-value pair"),
+        unsafe_allow_html=True,
+    )
+
+    _ANF_KEY = "_pdf_add_field_open"
+    if _ANF_KEY not in st.session_state:
+        st.session_state[_ANF_KEY] = False
+
+    if not st.session_state[_ANF_KEY]:
+        # Collapsed state — just show the button
+        anf_col, _ = st.columns([2, 5])
+        with anf_col:
+            if st.button(
+                "＋  Add New Field",
+                key="_anf_open_btn",
+                help="Manually add a custom field and value to the extracted entities",
+                use_container_width=True,
+            ):
+                st.session_state[_ANF_KEY] = True
+                st.rerun()
+    else:
+        # Expanded state — show the input form
+        st.markdown(
+            f"<div style='background:{_BG2};border:1px solid {_BORDER2};"
+            f"border-left:4px solid #7c3aed;border-radius:8px;"
+            f"padding:16px 18px;margin-bottom:10px;'>"
+            f"<div style='font-size:10px;font-weight:700;color:#7c3aed;"
+            f"font-family:monospace;text-transform:uppercase;letter-spacing:1.5px;"
+            f"margin-bottom:12px;'>✏ New Field</div>",
+            unsafe_allow_html=True,
+        )
+
+        nf_col1, nf_col2 = st.columns([1, 1])
+        with nf_col1:
+            st.markdown(
+                f"<div style='font-size:10px;font-weight:700;color:{_LBL};"
+                f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
+                f"margin-bottom:4px;'>Field Name</div>",
+                unsafe_allow_html=True,
+            )
+            new_field_name = st.text_input(
+                "new_field_name_input",
+                value="",
+                placeholder="e.g. Policy Number",
+                key="_anf_name",
+                label_visibility="collapsed",
+            )
+        with nf_col2:
+            st.markdown(
+                f"<div style='font-size:10px;font-weight:700;color:{_LBL};"
+                f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
+                f"margin-bottom:4px;'>Field Value</div>",
+                unsafe_allow_html=True,
+            )
+            new_field_value = st.text_input(
+                "new_field_value_input",
+                value="",
+                placeholder="e.g. POL-2024-00123",
+                key="_anf_value",
+                label_visibility="collapsed",
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        btn_save, btn_cancel, _ = st.columns([1.2, 1, 4.8])
+        with btn_save:
+            if st.button("💾 Save Field", key="_anf_save_btn", use_container_width=True):
+                fname = (new_field_name or "").strip()
+                fval  = (new_field_value or "").strip()
+
+                if not fname:
+                    st.error("Field name cannot be empty.")
+                elif fname in dict(intel_fields or []):
+                    st.error(f'Field "{fname}" already exists. Edit it in the table above.')
+                else:
+                    # ── Inject into sheet_cache so it persists across tabs ──
+                    cache      = st.session_state.get("sheet_cache", {})
+                    sheet_data = cache.get(selected_sheet, {})
+                    pages      = sheet_data.get("data", [])
+                    new_entry  = {
+                        "value":              fval,
+                        "modified":           fval,
+                        "confidence":         1.0,
+                        "source_text":        "",
+                        "source_page":        1,
+                        "page_width":         8.5,
+                        "page_height":        11.0,
+                        "bounding_polygon":   None,
+                        "_adi_confidence":    0.0,
+                        "_from_intelligence": True,
+                        "_user_added":        True,
+                    }
+                    if pages:
+                        pages[0][fname] = new_entry
+                    else:
+                        sheet_data["data"] = [{fname: new_entry}]
+                        cache[selected_sheet] = sheet_data
+
+                    # ── Also inject into intelligence entities ─────────────
+                    intel    = st.session_state.get("_pdf_intelligence", {})
+                    entities = intel.get("analysis", {}).get("entities", {})
+                    entities[fname] = {
+                        "value":       fval,
+                        "confidence":  1.0,
+                        "source_text": "",
+                    }
+
+                    # ── Record edit so it shows in Journey + Summary ────────
+                    _sync_edit(fname, fval, selected_sheet)
+
+                    # ── Bust lookup cache ──────────────────────────────────
+                    st.session_state.pop("_adi_lookup", None)
+
+                    # ── Reset form ─────────────────────────────────────────
+                    st.session_state[_ANF_KEY] = False
+                    st.session_state.pop("_anf_name",  None)
+                    st.session_state.pop("_anf_value", None)
+                    st.toast(f'✅ Field "{fname}" added!')
+                    st.rerun()
+
+        with btn_cancel:
+            if st.button("✕ Cancel", key="_anf_cancel_btn", use_container_width=True):
+                st.session_state[_ANF_KEY] = False
+                st.session_state.pop("_anf_name",  None)
+                st.session_state.pop("_anf_value", None)
+                st.rerun()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SUMMARY HELPERS
