@@ -1959,10 +1959,19 @@ def render_pdf_analysis_panel(
     doc_type = intelligence.get("doc_type", "Legal")
     meta     = _DOC_TYPE_META.get(doc_type, _DOC_TYPE_META["Legal"])
 
-    # Invalidate ADI lookup on new file
-    if st.session_state.get("_adi_lookup_file") != uploaded_name:
-        st.session_state.pop("_adi_lookup", None)
-        st.session_state["_adi_lookup_file"] = uploaded_name
+    # ── Invalidate ALL per-file caches when a new file is uploaded ────────────
+    _prev_file = st.session_state.get("_pdf_analysis_current_file")
+    if _prev_file != uploaded_name:
+        # New file detected — clear everything that belongs to the previous file
+        for _stale_key in (
+            "_adi_lookup",
+            "_adi_lookup_file",
+            "_pdf_validation_result",   # ← fixes validation bleed-over between files
+            "_pdf_summary_override",
+            "_pdf_intel_debug",
+        ):
+            st.session_state.pop(_stale_key, None)
+        st.session_state["_pdf_analysis_current_file"] = uploaded_name
 
     # Resolve PDF path
     _tmpdir  = st.session_state.get("tmpdir", "")
@@ -2000,7 +2009,7 @@ def render_pdf_analysis_panel(
         f"⚡ Signals ({_signals_count})",
         "📄 Raw JSON",
         "🔄 Transformation Journey",
-        "✅ Validation",
+        "✅ AI Assistant",
     ])
 
     with tabs[0]:

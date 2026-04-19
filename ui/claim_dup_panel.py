@@ -27,9 +27,9 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
 
     # ── Top banner ─────────────────────────────────────────────────────────
     if changed_count == 0:
-        banner_color  = "#f5c842"
-        banner_bg     = "rgba(245,200,66,0.07)"
-        banner_border = "rgba(245,200,66,0.3)"
+        banner_color  = "#b45309"
+        banner_bg     = "#ffffff"
+        banner_border = "#fde68a"
         banner_icon   = "⚠"
         banner_title  = "Duplicate Claim — No Changes Detected"
         banner_sub    = (
@@ -38,9 +38,9 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
             f"on <b>{prev_date}</b>. All {unchanged_count} field(s) are identical."
         )
     else:
-        banner_color  = "#f87171"
-        banner_bg     = "rgba(248,113,113,0.07)"
-        banner_border = "rgba(248,113,113,0.3)"
+        banner_color  = "#b91c1c"
+        banner_bg     = "#ffffff"
+        banner_border = "#fecaca"
         banner_icon   = "🔄"
         banner_title  = f"Duplicate Claim — {changed_count} Field(s) Changed"
         banner_sub    = (
@@ -58,7 +58,7 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
         f"<div style='font-size:13px;font-weight:700;color:{banner_color};"
         f"font-family:monospace;text-transform:uppercase;letter-spacing:1px;"
         f"margin-bottom:6px;'>{banner_icon} {banner_title}</div>"
-        f"<div style='font-size:13px;color:#0f1117;font-family:sans-serif;"
+        f"<div style='font-size:13px;color:#000000;font-family:sans-serif;"
         f"line-height:1.6;'>{banner_sub}</div>"
         f"</div>",
         unsafe_allow_html=True,
@@ -105,13 +105,13 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
     # ── Before / After diff table ──────────────────────────────────────────
     st.markdown(
         "<div style='display:grid;grid-template-columns:1.8fr 2fr 2fr;"
-        "gap:8px;padding:6px 10px;background:#1e1e32;border-radius:6px 6px 0 0;"
-        "border:1px solid #2a2a45;margin-top:6px;'>"
-        "<div style='font-size:11px;font-weight:700;color:#a0a0c8;"
+        "gap:8px;padding:6px 10px;background:#f1f5f9;border-radius:6px 6px 0 0;"
+        "border:1px solid #cbd5e1;margin-top:6px;'>"
+        "<div style='font-size:11px;font-weight:700;color:#000000;"
         "text-transform:uppercase;letter-spacing:1.2px;font-family:monospace;'>Field</div>"
-        "<div style='font-size:11px;font-weight:700;color:#f87171;"
+        "<div style='font-size:11px;font-weight:700;color:#b91c1c;"
         "text-transform:uppercase;letter-spacing:1.2px;font-family:monospace;'>Before</div>"
-        "<div style='font-size:11px;font-weight:700;color:#34d399;"
+        "<div style='font-size:11px;font-weight:700;color:#15803d;"
         "text-transform:uppercase;letter-spacing:1.2px;font-family:monospace;'>After</div>"
         "</div>",
         unsafe_allow_html=True,
@@ -120,21 +120,21 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
     for idx, (field, diff) in enumerate(changes.items()):
         before_val = diff.get("before", "") or "(empty)"
         after_val  = diff.get("after",  "") or "(empty)"
-        row_bg     = "#17172a" if idx % 2 == 0 else "#12121c"
+        row_bg     = "#ffffff" if idx % 2 == 0 else "#f8fafc"
 
         st.markdown(
             f"<div style='display:grid;grid-template-columns:1.8fr 2fr 2fr;"
             f"gap:8px;padding:8px 10px;background:{row_bg};"
-            f"border-left:1px solid #2a2a45;border-right:1px solid #2a2a45;"
-            f"border-bottom:1px solid #2a2a45;'>"
-            f"<div style='font-size:12px;font-weight:600;color:#c8c7f0;"
+            f"border-left:1px solid #cbd5e1;border-right:1px solid #cbd5e1;"
+            f"border-bottom:1px solid #cbd5e1;'>"
+            f"<div style='font-size:12px;font-weight:600;color:#000000;"
             f"font-family:monospace;text-transform:uppercase;letter-spacing:0.5px;"
             f"display:flex;align-items:center;'>{field}</div>"
-            f"<div style='font-size:12px;color:#fca5a5;font-family:monospace;"
-            f"background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);"
+            f"<div style='font-size:12px;color:#b91c1c;font-family:monospace;"
+            f"background:#fef2f2;border:1px solid #fecaca;"
             f"border-radius:4px;padding:4px 8px;word-break:break-all;'>{before_val}</div>"
-            f"<div style='font-size:12px;color:#6ee7b7;font-family:monospace;"
-            f"background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);"
+            f"<div style='font-size:12px;color:#15803d;font-family:monospace;"
+            f"background:#f0fdf4;border:1px solid #bbf7d0;"
             f"border-radius:4px;padding:4px 8px;word-break:break-all;'>{after_val}</div>"
             f"</div>",
             unsafe_allow_html=True,
@@ -142,8 +142,8 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
 
     # Bottom border
     st.markdown(
-        "<div style='height:4px;background:#1e1e32;border-radius:0 0 6px 6px;"
-        "border:1px solid #2a2a45;border-top:none;margin-bottom:12px;'></div>",
+        "<div style='height:4px;background:#f1f5f9;border-radius:0 0 6px 6px;"
+        "border:1px solid #cbd5e1;border-top:none;margin-bottom:12px;'></div>",
         unsafe_allow_html=True,
     )
 
@@ -154,21 +154,21 @@ def render_claim_dup_panel(claim_id: str, dup_results: dict, selected_sheet: str
             if f not in changes and new_fields.get(f)
         ]
         pills = "".join(
-            f"<span style='display:inline-block;background:#17172a;"
-            f"border:1px solid #2a2a45;border-radius:4px;padding:2px 8px;"
-            f"font-size:11px;color:#a0a0c8;margin:2px 3px;"
+            f"<span style='display:inline-block;background:#f8fafc;"
+            f"border:1px solid #cbd5e1;border-radius:4px;padding:2px 8px;"
+            f"font-size:11px;color:#000000;margin:2px 3px;"
             f"font-family:monospace;'>{f}</span>"
             for f in unchanged_fields[:12]
         )
         more = (
-            f"<span style='font-size:11px;color:#64748b;margin-left:4px;'>"
+            f"<span style='font-size:11px;color:#374151;margin-left:4px;'>"
             f"+{unchanged_count - 12} more</span>"
             if unchanged_count > 12 else ""
         )
         st.markdown(
-            f"<div style='background:#12121c;border:1px solid #2a2a45;"
+            f"<div style='background:#ffffff;border:1px solid #cbd5e1;"
             f"border-radius:6px;padding:8px 12px;margin-bottom:12px;'>"
-            f"<div style='font-size:11px;color:#64748b;font-family:monospace;"
+            f"<div style='font-size:11px;color:#374151;font-family:monospace;"
             f"text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;'>"
             f"✓ {unchanged_count} unchanged field(s)</div>"
             f"<div>{pills}{more}</div>"

@@ -2,6 +2,8 @@
 ui/export_panel.py
 Right-column export panel: schema badge, confidence bar, CoL enrichment result,
 live JSON preview, standard export, schema export, merged-regions display.
+
+v9 change: Live JSON preview now shows ONLY raw JSON code (clean card view removed).
 """
 
 import json
@@ -22,6 +24,10 @@ from modules.storage import _save_to_feature_store
 import datetime
 from ui.dialogs import show_claim_journey_dialog
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MAIN PANEL
+# ─────────────────────────────────────────────────────────────────────────────
 
 def render_export_panel(
     *,
@@ -77,7 +83,7 @@ def render_export_panel(
             unsafe_allow_html=True,
         )
 
-    # ── Cause of Loss enrichment result ──────────────────────────────────────
+    # Cause of Loss enrichment result
     _col_enriched   = st.session_state.get(f"_col_enriched_{selected_sheet}_{curr_claim_id}", False)
     _col_summary_rp = st.session_state.get(f"_col_summary_{selected_sheet}_{curr_claim_id}")
     _col_val_rp     = None
@@ -139,12 +145,12 @@ def render_export_panel(
             unsafe_allow_html=True,
         )
 
-    # ── Live JSON toggle ──────────────────────────────────────────────────────
+    # ── Live JSON preview — RAW JSON ONLY ──────────────────────────────────────
     st.markdown("<hr>", unsafe_allow_html=True)
     _json_toggle_key = f"show_live_json_{selected_sheet}_{curr_claim_id}"
     if _json_toggle_key not in st.session_state:
         st.session_state[_json_toggle_key] = False
-    _json_btn_label = "▲ Hide Live JSON" if st.session_state[_json_toggle_key] else "{ } Preview JSON"
+    _json_btn_label = "▲ Hide Preview" if st.session_state[_json_toggle_key] else "{ } Preview JSON"
     if st.button(_json_btn_label, key=f"json_toggle_btn_{selected_sheet}_{curr_claim_id}", use_container_width=True):
         st.session_state[_json_toggle_key] = not st.session_state[_json_toggle_key]
 
@@ -153,7 +159,7 @@ def render_export_panel(
         _rp_schema = st.session_state.get("active_schema", None)
 
         if _rp_schema and _rp_schema in SCHEMAS:
-            # ── Schema mode preview ───────────────────────────────────────────
+            # Schema mode preview
             _rp_schema_def = SCHEMAS[_rp_schema]
             _rp_mapped     = map_claim_to_schema(curr_claim, _rp_schema, title_fields, _llm_map_result)
             _rp_cf         = st.session_state.get(f"custom_fields_{_rp_schema}", [])
@@ -178,7 +184,7 @@ def render_export_panel(
                     _rp_live_record[sf] = val
 
         else:
-            # ── Plain mode preview ────────────────────────────────────────────
+            # Plain mode preview
             for fld, inf in curr_claim.items():
                 chk_key = f"chk_{selected_sheet}_{curr_claim_id}_{fld}"
                 if st.session_state.get(chk_key, True) is False:
@@ -197,19 +203,19 @@ def render_export_panel(
             uf_mk_rp  = f"uf_mod_{selected_sheet}_{curr_claim_id}_{uf['name']}_{uf_idx_rp}"
             _rp_live_record[uf["name"]] = st.session_state.get(uf_mk_rp, uf["value"])
 
-        _rp_json = json.dumps(_sanitize_for_json(_rp_live_record), indent=2, ensure_ascii=False)
-        st.markdown(
-            f"<div class='json-live-panel' style='margin-top:6px;'>"
-            f"<div class='json-live-header'>"
-            f"<span style='font-size:var(--sz-xs);font-weight:600;color:var(--t2);font-family:var(--mono);'>"
-            f"<span class='json-live-dot'></span>{curr_claim_id}</span>"
-            f"<span style='font-size:10px;color:var(--t3);font-family:var(--mono);'>"
-            f"{len(_rp_live_record)} fields</span></div>"
-            f"<div class='json-live-body' style='max-height:420px;'>{_rp_json}</div></div>",
-            unsafe_allow_html=True,
-        )
+        # ── RAW JSON ONLY (v9 — clean card preview removed) ───────────────────
+        if _rp_live_record:
+            raw_json = json.dumps(_sanitize_for_json(_rp_live_record), indent=2, ensure_ascii=False)
+            st.code(raw_json, language="json")
+        else:
+            st.markdown(
+                "<div style='background:#f8f9fa;border:1px solid #e2e8f0;border-radius:8px;"
+                "padding:16px;text-align:center;color:#94a3b8;font-size:12px;"
+                "font-family:monospace;'>No fields selected for export</div>",
+                unsafe_allow_html=True,
+            )
 
-    # ── Claim Journey ─────────────────────────────────────────────────────────
+    # Claim Journey
     if curr_claim_id:
         if st.button(
             "🔍 View Transformation Journey",
@@ -227,7 +233,7 @@ def render_export_panel(
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ── Standard export ───────────────────────────────────────────────────────
+    # Standard export
     _sheet_meta = {"sheet_name": selected_sheet, "record_count": len(data)}
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("<p class='section-lbl'>📄 Standard Export</p>", unsafe_allow_html=True)
@@ -296,7 +302,7 @@ def render_export_panel(
             key=f"dl_std_json_{selected_sheet}",
         )
 
-    # ── Schema export ─────────────────────────────────────────────────────────
+    # Schema export
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown("<p class='section-lbl'>🔌 Schema Export</p>", unsafe_allow_html=True)
     _schema_sel = st.selectbox(
@@ -366,7 +372,7 @@ def render_export_panel(
             use_container_width=True, key=f"dl_schema_export_{selected_sheet}",
         )
 
-    # ── Merged regions ────────────────────────────────────────────────────────
+    # Merged regions
     st.markdown("<hr>", unsafe_allow_html=True)
     if merged_meta:
         st.markdown("<p class='section-lbl'>Merged Regions</p>", unsafe_allow_html=True)

@@ -302,13 +302,16 @@ if st.session_state.get("last_uploaded") != _upload_fingerprint:
     st.session_state.last_uploaded = _upload_fingerprint
 
     if file_ext == ".pdf":
-        from modules.pdf_azure_parser import get_pdf_sheet_names
-        st.session_state.sheet_names = get_pdf_sheet_names(excel_path)
-        # Clear intelligence cache so it re-runs for the new file
-        st.session_state.pop("_pdf_intelligence", None)
-        st.session_state.pop("_pdf_intelligence_file", None)
-        st.session_state.pop("_adi_lookup", None)
-        st.session_state.pop("_adi_lookup_file", None)
+         from modules.pdf_azure_parser import get_pdf_sheet_names
+         st.session_state.sheet_names = get_pdf_sheet_names(excel_path)
+         # Clear intelligence cache so it re-runs for the new file
+         st.session_state.pop("_pdf_intelligence", None)
+         st.session_state.pop("_pdf_intelligence_file", None)
+         st.session_state.pop("_pdf_parsed_raw", None)   # <-- ADD THIS LINE
+         # Clear all page-specific ADI lookup caches
+         for _k in list(st.session_state.keys()):
+             if _k.startswith("_adi_lookup"):
+                 st.session_state.pop(_k, None)
     elif file_ext == ".docx":
         st.session_state.sheet_names = ["Document"]
     else:
@@ -448,10 +451,14 @@ if selected_sheet not in st.session_state.sheet_cache:
             if file_ext == ".pdf":
                 all_pages_data, sheet_type, _doc_type_enum, _azure_result = _parse_pdf(excel_path)
 
+                 # Store raw parsed result for page-wise entity display in pdf_analysis.py
+                st.session_state["_pdf_parsed_raw"] = _azure_result
+
                 try:
-                    selected_page_num = int(selected_sheet.replace("Page", "").strip())
+                     selected_page_num = int(selected_sheet.replace("Page", "").strip())
                 except Exception:
-                    selected_page_num = 1
+                     selected_page_num = 1
+
 
                 if 1 <= selected_page_num <= len(all_pages_data):
                     data = [all_pages_data[selected_page_num - 1]]

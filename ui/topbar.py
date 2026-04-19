@@ -1,7 +1,7 @@
 """
 ui/topbar.py — light-theme version
 Top navigation bar:
-  LEFT   → ValueMomentum logo (Signal Hub icon)
+  LEFT   → Signal Hub LOGO
   CENTER → "Document Signal Hub" title + subtitle + schema badge
   RIGHT  → ValueMomentum badge logo
   FAR-R  → cache 🗑 + settings ⚙ buttons
@@ -75,10 +75,10 @@ def render_topbar(schemas: dict, config_load_status: dict) -> bool:
             'letter-spacing:-0.3px;line-height:1.2;white-space:nowrap;'
             '">&nbsp;&nbsp;&nbsp;Document Signal Hub</span>'
             '<span style="'
-            'font-size:11px;font-weight:400;color:#0f1117;'
+            'font-size:12px;font-weight:400;color:#007BFF;'
             'font-family:\'JetBrains Mono\',\'Cascadia Code\',\'Consolas\',monospace;'
             'letter-spacing:0.5px;white-space:nowrap;'
-            '"> &nbsp;  Automated Claims Data Ingestion &amp; Multi-Schema Export Platform</span>'
+            '"> &nbsp;  Turning Insurance Documents into Decision-Ready Signals </span>'
             '</div>'
 
             # Schema badge

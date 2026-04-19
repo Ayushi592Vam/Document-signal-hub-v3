@@ -22830,5 +22830,1221 @@
     "input_text": "LACERATION",
     "cause_of_loss": "Laceration",
     "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T12:39:54.685845",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T12:41:05.937856",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T13:50:36.577709",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T13:51:43.058364",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T13:56:31.221276",
+    "filename": "loss_runs.xlsx",
+    "file_hash": "47f14b302b83b7b7409833a0f72996f8757168d2d40475bb984467f1bcbb09cd",
+    "sheets": [
+      "CGL Loss Run",
+      "Workers Comp Loss Run",
+      "Commercial Auto Loss Run",
+      "Commercial Property Loss Run",
+      "Prof Liability E&O Loss Run"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T13:56:32.616797",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de",
+    "claim_rows": 10,
+    "sheet_type": "LOSS_RUN",
+    "total_rows": 14,
+    "total_cols": 12,
+    "col_renames": {
+      "Claim_id": "Claim Number",
+      "Date of Loss": "Loss Date",
+      "Date Reported": "Date Reported",
+      "Claimant Name": "Claimant Name",
+      "Description of Loss": "Description of Loss",
+      "Indemnity Paid": "Indemnity Paid",
+      "Medical Paid": "Medical Paid",
+      "Expense Paid": "Expense Paid",
+      "Total Paid": "Total Paid",
+      "Reserve": "Reserve",
+      "Total Incurred": "Total Incurred",
+      "Status": "Status"
+    }
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T13:56:34.860524",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FIELD_ADDED",
+    "timestamp": "2026-04-17T14:01:00.685503",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "ayushi",
+    "value": "nagpure"
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T14:02:08.742043",
+    "filename": "Sample_Medical_form.pdf",
+    "file_hash": "9319b082771c3d4aab87424e132434be1436b25606eb223293523fb290516959",
+    "sheets": [
+      "Page 1"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:03:02.058247",
+    "filename": "Sample_Medical_form.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "5d370074196c98703fc391b109338426cec8e4b61041e9a74fd5abff6a600c26",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 14,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T14:12:34.260077",
+    "filename": "loss_runs.xlsx",
+    "file_hash": "47f14b302b83b7b7409833a0f72996f8757168d2d40475bb984467f1bcbb09cd",
+    "sheets": [
+      "CGL Loss Run",
+      "Workers Comp Loss Run",
+      "Commercial Auto Loss Run",
+      "Commercial Property Loss Run",
+      "Prof Liability E&O Loss Run"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:12:35.677497",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de",
+    "claim_rows": 10,
+    "sheet_type": "LOSS_RUN",
+    "total_rows": 14,
+    "total_cols": 12,
+    "col_renames": {
+      "Claim_id": "Claim Number",
+      "Date of Loss": "Loss Date",
+      "Date Reported": "Date Reported",
+      "Claimant Name": "Claimant Name",
+      "Description of Loss": "Description of Loss",
+      "Indemnity Paid": "Indemnity Paid",
+      "Medical Paid": "Medical Paid",
+      "Expense Paid": "Expense Paid",
+      "Total Paid": "Total Paid",
+      "Reserve": "Reserve",
+      "Total Incurred": "Total Incurred",
+      "Status": "Status"
+    }
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T14:12:37.612292",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T14:13:23.294755",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:14:12.590254",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T14:21:24.833180",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:22:12.168647",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T14:25:05.951618",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:25:56.591076",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T14:26:48.939024",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 2",
+    "sheet_hash": "",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 15,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T15:03:53.448943",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T15:04:47.963778",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T15:10:33.596681",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T15:10:46.909201",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "LLM_FIELD_MAP",
+    "timestamp": "2026-04-17T15:10:50.500638",
+    "sheet": "Page 1_plain",
+    "schema": "Guidewire",
+    "source_cols": [
+      "Date",
+      "CASE NUMBER",
+      "Docket prepared for",
+      "LAST REFRESHED",
+      "JUDGE",
+      "CATEGORY",
+      "FILING DATE",
+      "MATTER TYPE",
+      "Docket",
+      "PRACTICE AREA"
+    ],
+    "mappings": {
+      "CASE NUMBER": "Claim Number",
+      "Date": "Loss Date",
+      "FILING DATE": "Date Reported",
+      "CATEGORY": "Line of Business"
+    },
+    "unmapped": [
+      "Docket prepared for",
+      "LAST REFRESHED",
+      "JUDGE",
+      "MATTER TYPE",
+      "Docket",
+      "PRACTICE AREA"
+    ]
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T15:16:11.033147",
+    "filename": "loss_runs.xlsx",
+    "file_hash": "47f14b302b83b7b7409833a0f72996f8757168d2d40475bb984467f1bcbb09cd",
+    "sheets": [
+      "CGL Loss Run",
+      "Workers Comp Loss Run",
+      "Commercial Auto Loss Run",
+      "Commercial Property Loss Run",
+      "Prof Liability E&O Loss Run"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T15:16:11.826744",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de",
+    "claim_rows": 10,
+    "sheet_type": "LOSS_RUN",
+    "total_rows": 14,
+    "total_cols": 12,
+    "col_renames": {
+      "Claim_id": "Claim Number",
+      "Date of Loss": "Loss Date",
+      "Date Reported": "Date Reported",
+      "Claimant Name": "Claimant Name",
+      "Description of Loss": "Description of Loss",
+      "Indemnity Paid": "Indemnity Paid",
+      "Medical Paid": "Medical Paid",
+      "Expense Paid": "Expense Paid",
+      "Total Paid": "Total Paid",
+      "Reserve": "Reserve",
+      "Total Incurred": "Total Incurred",
+      "Status": "Status"
+    }
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T15:16:13.662059",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-17T15:17:31.183215",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de"
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:31.361598",
+    "claim_id": "CGL-001",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:31.499388",
+    "claim_id": "CGL-002",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:31.641172",
+    "claim_id": "CGL-003",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:31.767169",
+    "claim_id": "CGL-004",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:31.895638",
+    "claim_id": "CGL-005",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:32.056603",
+    "claim_id": "CGL-006",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:32.233441",
+    "claim_id": "CGL-007",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:32.401279",
+    "claim_id": "CGL-008",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:32.551860",
+    "claim_id": "CGL-009",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:17:32.676496",
+    "claim_id": "CGL-010",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T15:17:34.463036",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FIELD_EDITED",
+    "timestamp": "2026-04-17T15:27:00.771395",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "Loss Date",
+    "original": "03/15/2021",
+    "new_value": "03/15/2028"
+  },
+  {
+    "event": "FIELD_EDITED",
+    "timestamp": "2026-04-17T15:27:39.644766",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "Loss Date",
+    "original": "03/15/2021",
+    "new_value": "03/15/2028"
+  },
+  {
+    "event": "FIELD_EDITED",
+    "timestamp": "2026-04-17T15:28:47.969701",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "Loss Date",
+    "original": "03/15/2021",
+    "new_value": "03/15/2028"
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-17T15:29:15.923406",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de"
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.094369",
+    "claim_id": "CGL-001",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.252860",
+    "claim_id": "CGL-002",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.416697",
+    "claim_id": "CGL-003",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.583122",
+    "claim_id": "CGL-004",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.722614",
+    "claim_id": "CGL-005",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:16.877811",
+    "claim_id": "CGL-006",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:17.042118",
+    "claim_id": "CGL-007",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:17.202671",
+    "claim_id": "CGL-008",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:17.339350",
+    "claim_id": "CGL-009",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T15:29:17.539239",
+    "claim_id": "CGL-010",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T15:29:19.209863",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FIELD_EDITED",
+    "timestamp": "2026-04-17T15:30:05.546792",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "Loss Date",
+    "original": "03/15/2021",
+    "new_value": "03/15/2028"
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T15:31:47.165333",
+    "filename": "loss_runs.xlsx",
+    "file_hash": "47f14b302b83b7b7409833a0f72996f8757168d2d40475bb984467f1bcbb09cd",
+    "sheets": [
+      "CGL Loss Run",
+      "Workers Comp Loss Run",
+      "Commercial Auto Loss Run",
+      "Commercial Property Loss Run",
+      "Prof Liability E&O Loss Run"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T15:31:47.962646",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de",
+    "claim_rows": 10,
+    "sheet_type": "LOSS_RUN",
+    "total_rows": 14,
+    "total_cols": 12,
+    "col_renames": {
+      "Claim_id": "Claim Number",
+      "Date of Loss": "Loss Date",
+      "Date Reported": "Date Reported",
+      "Claimant Name": "Claimant Name",
+      "Description of Loss": "Description of Loss",
+      "Indemnity Paid": "Indemnity Paid",
+      "Medical Paid": "Medical Paid",
+      "Expense Paid": "Expense Paid",
+      "Total Paid": "Total Paid",
+      "Reserve": "Reserve",
+      "Total Incurred": "Total Incurred",
+      "Status": "Status"
+    }
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T15:31:49.940205",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FIELD_EDITED",
+    "timestamp": "2026-04-17T15:31:57.402873",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "field": "Loss Date",
+    "original": "03/15/2021",
+    "new_value": "03/15/2028"
+  },
+  {
+    "event": "EXPORT_GENERATED",
+    "timestamp": "2026-04-17T15:40:36.368702",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "export_type": "Standard JSON",
+    "records": 10
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T15:45:18.950878",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T15:46:12.766108",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-17T17:25:22.089973",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de"
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:22.261604",
+    "claim_id": "CGL-001",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Loss Date"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:22.429399",
+    "claim_id": "CGL-002",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:22.651694",
+    "claim_id": "CGL-003",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:22.916365",
+    "claim_id": "CGL-004",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.120673",
+    "claim_id": "CGL-005",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.276203",
+    "claim_id": "CGL-006",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.425242",
+    "claim_id": "CGL-007",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.576856",
+    "claim_id": "CGL-008",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.755804",
+    "claim_id": "CGL-009",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T17:25:23.887454",
+    "claim_id": "CGL-010",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T17:25:25.757065",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-17T18:08:48.769403",
+    "filename": "loss_runs.xlsx",
+    "sheet": "CGL Loss Run",
+    "sheet_hash": "0a53856501ec2c42f484328b7be87569ac8f90d6df3ccd7b9db90d0ad70c24de"
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:48.994392",
+    "claim_id": "CGL-001",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:49.211788",
+    "claim_id": "CGL-002",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:49.439103",
+    "claim_id": "CGL-003",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:49.652654",
+    "claim_id": "CGL-004",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:49.856451",
+    "claim_id": "CGL-005",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:50.069339",
+    "claim_id": "CGL-006",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:50.292526",
+    "claim_id": "CGL-007",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:50.542542",
+    "claim_id": "CGL-008",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:50.788845",
+    "claim_id": "CGL-009",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:08:51.019639",
+    "claim_id": "CGL-010",
+    "sheet": "CGL Loss Run",
+    "filename": "loss_runs.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": []
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T18:08:53.164285",
+    "sheet": "CGL Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "LACERATION",
+    "cause_of_loss": "Laceration",
+    "summary": "The claimant alleges that they suffered a laceration."
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T18:09:33.692866",
+    "filename": "LRC.xlsx",
+    "file_hash": "759eb999b7a6a85677a969a36d5a3ca4499442890deeded29f3186d65031adb3",
+    "sheets": [
+      "Loss Run",
+      "Workers Comp Loss Run",
+      "Commercial Auto Loss Run",
+      "Commercial Property Loss Run",
+      "Prof Liability E&O Loss Run"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T18:09:35.145381",
+    "filename": "LRC.xlsx",
+    "sheet": "Loss Run",
+    "sheet_hash": "b556740756f4fdf1c8597bcfdb106736075022200539a324772d8c32ab7702f8",
+    "claim_rows": 10,
+    "sheet_type": "LOSS_RUN",
+    "total_rows": 14,
+    "total_cols": 12,
+    "col_renames": {
+      "Claim_id": "Claim Number",
+      "Date of Loss": "Loss Date",
+      "Date Reported": "Date Reported",
+      "Claimant Name": "Claimant Name",
+      "Description of Loss": "Description of Loss",
+      "Indemnity Paid": "Indemnity Paid",
+      "Medical Paid": "Medical Paid",
+      "Expense Paid": "Expense Paid",
+      "Total Paid": "Total Paid",
+      "Reserve": "Reserve",
+      "Total Incurred": "Total Incurred",
+      "Status": "Status"
+    }
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:35.427463",
+    "claim_id": "CGL-001",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Claimant Name",
+      "Description of Loss",
+      "Loss Date"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:35.648348",
+    "claim_id": "CGL-002",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Indemnity Paid",
+      "Loss Date",
+      "Status",
+      "Total Incurred",
+      "Total Paid"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:35.875721",
+    "claim_id": "CGL-003",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:36.099812",
+    "claim_id": "CGL-004",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:36.315134",
+    "claim_id": "CGL-005",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:36.550494",
+    "claim_id": "CGL-006",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:36.767805",
+    "claim_id": "CGL-007",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:36.987260",
+    "claim_id": "CGL-008",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:37.209389",
+    "claim_id": "CGL-009",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "CLAIM_DUPLICATE_DETECTED",
+    "timestamp": "2026-04-17T18:09:37.418897",
+    "claim_id": "CGL-010",
+    "sheet": "Loss Run",
+    "filename": "LRC.xlsx",
+    "prev_filename": "loss_runs.xlsx",
+    "changed_fields": [
+      "Date Reported",
+      "Loss Date",
+      "Status"
+    ]
+  },
+  {
+    "event": "LLM_CAUSE_ENRICHED",
+    "timestamp": "2026-04-17T18:09:39.436329",
+    "sheet": "Loss Run",
+    "claim_id": "CGL-001",
+    "source_fields": [
+      "Description of Loss"
+    ],
+    "input_text": "Slip & fall - wet floor at job site",
+    "cause_of_loss": "Slip and Fall",
+    "summary": "The claimant alleges that they slipped and fell due to a wet floor at the job site."
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T18:10:52.714172",
+    "filename": "Legal_Sample.pdf",
+    "file_hash": "890569c832e58254f08742bcae988b0e7160de87e87d54410c658d0744cce68d",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T18:11:47.409571",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 10,
+    "col_renames": {}
+  },
+  {
+    "event": "FILE_INGESTED",
+    "timestamp": "2026-04-17T18:13:46.756262",
+    "filename": "FNOL Sample.pdf",
+    "file_hash": "6528fcf02e1ddff0548657975d8ea4dd3bc454f363e873801fff172a2fbc84be",
+    "sheets": [
+      "Page 1",
+      "Page 2"
+    ]
+  },
+  {
+    "event": "SHEET_PARSED",
+    "timestamp": "2026-04-17T18:14:38.761746",
+    "filename": "FNOL Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "84e7c9bb5dcfbdb659041204c4c59e48b9b7369844e3dd6211b32e04d2b71177",
+    "claim_rows": 1,
+    "sheet_type": "PDF",
+    "total_rows": 1,
+    "total_cols": 21,
+    "col_renames": {}
+  },
+  {
+    "event": "SHEET_LOADED_FROM_CACHE",
+    "timestamp": "2026-04-19T09:56:43.449555",
+    "filename": "Legal_Sample.pdf",
+    "sheet": "Page 1",
+    "sheet_hash": "db402c1a56bf83b5077725a3c9d4186cb00570e7d403038f8672660cc6b81071"
   }
 ]
